@@ -6,6 +6,7 @@ import discord
 from discord.ui import Modal, View, InputText
 from discord.commands import Option
 import os
+import sys
 from supabase.client import Client, create_client
 
 load_dotenv()
@@ -13,6 +14,11 @@ bot = discord.Bot(intents=discord.Intents.all())
 
 url = os.getenv("url")
 key = os.getenv("public")
+
+if sys.argv[1] == "dev":
+    DISCORD_TOKEN = os.getenv('DEVELOPMENT_DISCORD_TOKEN')
+elif sys.argv[1] == "prod":
+    DISCORD_TOKEN = os.getenv('CLAN_ACADEMY_DISCORD_TOKEN')
 
 supabase: Client = create_client(url, key)
 
@@ -226,4 +232,4 @@ async def add_new_item(ctx):
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
 
-bot.run(os.getenv('DEVELOPMENT_TOKEN'))
+bot.run(DISCORD_TOKEN)
