@@ -1,7 +1,6 @@
 from peewee import *
 import datetime
-from db import db
-from Models import Users, Transaction
+import  time
 from dotenv import load_dotenv
 import discord
 from discord.ui import Modal, View, InputText
@@ -11,8 +10,6 @@ from supabase.client import Client, create_client
 
 load_dotenv()
 bot = discord.Bot(intents=discord.Intents.all())
-db.connect()
-db.create_tables([Users, Transaction])
 
 url = os.getenv("url")
 key = os.getenv("public")
@@ -60,6 +57,14 @@ async def check_clancoins(ctx):
     discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
     coins = supabase.table("discord_user").select("coins").match({"discordUser":discord_full_user}).execute()
 
+    # transactions = supabase.table("transaction").select('*').eq('transaction_type', 'welcome_gift').eq('received_by', user).execute()
+    transactions = supabase.table("transaction").select("amount").execute()
+    print(transactions)
+    assert len(transactions.data) > 0
+
+    for transaction in transactions.data:
+        print(transaction["amount"])
+
     if len(coins.data) > 0:
         current_coins = coins.data[0]["coins"]
         print(current_coins)
@@ -86,6 +91,59 @@ async def give_clancoins(ctx, member: discord.Member, amount: int):
         await ctx.respond("No tienes permiso para hacer eso.")
 
 @bot.slash_command(name="dar_monedas_a_muchos_usuarios", description="Da a la misma cantidad de ClanCoins a un monton de usarios.")
+async def give_coins_to_many_users(ctx, users_list: str, amount: int):
+    await ctx.defer()
+    # time.sleep(4)
+    # Por limitaciones de discord, primero tenemos que asegurarnos que cada nombre#discriminator estan separados por una coma
+    # La lista de usuarios no puede ser mayor a 2000 caracteres 
+    new_list = users_list.replace('\t', '') #si copias de excel la lista de usuarios, te añade un tab, esta linea lo elimina
+    new_list = new_list.split(",") #usa la coma para separar cada usuario
+    
+    user_roles = ctx.author.roles
+    guild_roles = ctx.guild.roles
+
+    highest_user_rol = user_roles[len(user_roles) - 1].name
+    highest_guild_rol = guild_roles[len(guild_roles) - 1].name
+
+    received = []
+    
+    if highest_guild_rol == highest_user_rol:
+        for user in new_list:
+            print(user)
+            user_clean = user.lstrip()
+            discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
+            transaction_exists = supabase.table("transaction").select('*').eq('transaction_type', 'welcome_gift').eq('received_by', user_clean).execute()
+
+            if len(transaction_exists.data) > 0:
+                print(user_clean + ' already got welcome gift')
+            else:
+                transaction = supabase.table("transaction").insert({
+                        "transaction_type": "welcome_gift", 
+                        "amount" : amount, 
+                        "sent_by": discord_full_user, 
+                        "received_by": user_clean
+                    }).execute()
+
+                assert len(transaction.data) > 0
+
+                user_row = supabase.table("discord_user").select("*").eq("discordUser", user_clean).execute()
+                assert len(transaction.data) > 0
+
+                if len(user_row.data) > 0:
+                    print(user_row)
+                    print(user_row.data)
+                    print(user_row.data[0]["coins"])
+                    new_coin_amount = user_row.data[0]["coins"] + amount
+                    supabase.table("discord_user").update({"coins": new_coin_amount}).eq("discordUser", user_clean).execute()
+                
+                received.append(user)
+
+        received = ', '.join(received)
+        await ctx.send_followup(content=f'Le diste {amount} {clancoin_emote} a {received}.')
+    else:
+        await ctx.send_followup(content="No tienes permiso para hacer eso.")
+
+    # await ctx.send_followup(content=new_list)
 
 @bot.slash_command(name="tienda", description="Mira los objetos en la tienda de Clan.")
 async def store(ctx):
@@ -168,5 +226,4 @@ async def add_new_item(ctx):
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
 
-bot.run(os.getenv('CLAN_ACADMEY_DISCORD_TOKEN'))
-db.close()  
+bot.run(os.getenv('DEVELOPMENT_TOKEN'))
