@@ -1,7 +1,5 @@
 from dis import disco
 from peewee import *
-import datetime
-import  time
 from dotenv import load_dotenv
 import discord
 from discord.ui import Modal, View, InputText, Button
@@ -18,7 +16,6 @@ if sys.argv[1] == "dev":
     DISCORD_TOKEN = os.getenv('DEVELOPMENT_DISCORD_TOKEN')
 elif sys.argv[1] == "prod":
     DISCORD_TOKEN = os.getenv('CLAN_ACADEMY_DISCORD_TOKEN')
-
 
 clancoin_emote = '<:clancoin:974120483693924464>'
 pepega = '<:pepega:776918257785241630>'
@@ -130,12 +127,6 @@ async def check_clancoins(ctx):
     coins = supabase.table("discord_user").select("coins").match({"discordUser":discord_full_user}).execute()
 
     # transactions = supabase.table("transaction").select('*').eq('transaction_type', 'welcome_gift').eq('received_by', user).execute()
-    transactions = supabase.table("transaction").select("amount").execute()
-    print(transactions)
-    assert len(transactions.data) > 0
-
-    for transaction in transactions.data:
-        print(transaction["amount"])
 
     if len(coins.data) > 0:
         current_coins = coins.data[0]["coins"]
