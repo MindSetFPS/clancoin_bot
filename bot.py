@@ -1,13 +1,15 @@
+from dis import disco
 from peewee import *
 import datetime
 import  time
 from dotenv import load_dotenv
 import discord
-from discord.ui import Modal, View, InputText
+from discord.ui import Modal, View, InputText, Button
 from discord.commands import Option
 import os
 import sys
 from supabase.client import Client, create_client
+from helpers import user_is_mod
 
 load_dotenv()
 bot = discord.Bot(intents=discord.Intents.all())
@@ -23,6 +25,7 @@ elif sys.argv[1] == "prod":
 supabase: Client = create_client(url, key)
 
 clancoin_emote = '<:clancoin:974120483693924464>'
+pepega = '<:pepega:776918257785241630>'
 
 @bot.event
 async def on_ready():
@@ -31,14 +34,81 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
     # print(member.guild)
+    bot_full_user = bot.user.name + '#' + bot.user.discriminator
     discord_full_user = member.name + '#' + member.discriminator
     print(member.name)
 
-    data = supabase.table("discord_user").insert({"discordUser":discord_full_user}).execute()
-    assert len(data.data) > 0
+    transaction = supabase.table("transaction").insert({
+            "transaction_type": "welcome_gift", 
+            "amount" : 500, 
+            "sent_by": bot_full_user, 
+            "received_by": discord_full_user
+        }).execute()
+
+    insertion = supabase.table("discord_user").insert({"discordUser":discord_full_user, "coins": 500}).execute()
 
     channel = discord.utils.get(member.guild.channels, name="👋・bienvenidas")
     await channel.send(f"<@{member.id}> recibiste 500 {clancoin_emote} Clan Coins.")
+
+@bot.slash_command(name="check_mod", description="¿Tienes el rango mas alto del servidor?")
+async def check_mod(ctx):
+    print('/check_mod')
+    await ctx.respond(user_is_mod(ctx))
+
+class ApproveView(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+
+        aprove_button = Button(label="Aceptar", style=discord.ButtonStyle.primary, emoji="👍")
+        async def aprove_callback(interaction):
+            if user_is_mod(interaction):
+                await interaction.response.edit_message(content="Aprobado, recibe 300 Clan Coins.", view=None)
+            else:
+                await interaction.response.send_message("Un moderador te dará tu recompensa.", ephemeral=True)
+        reject_button = Button(label="Rechazar", style=discord.ButtonStyle.red, emoji="👎")
+        async def reject_callback(interaction):
+            if user_is_mod(interaction):
+                await interaction.response.edit_message(content="Revisa tu aporte.", view=None)
+            else:
+                await interaction.response.send_message("Un moderador te dará tu recompensa.", ephemeral=True)
+        
+        aprove_button.callback = aprove_callback
+        reject_button.callback = reject_callback
+
+        self.add_item(aprove_button)
+        self.add_item(reject_button)
+
+@bot.slash_command(name="recompensa_promo", description="Reclama tu recompensa por ganar tu promo.")
+async def recompensa_division(
+    ctx: discord.ApplicationContext,
+    img: Option(discord.SlashCommandOptionType.attachment, "Atachment"),
+    name: Option(str, "Division", choices=["Hierro","Bronce", "Plata", "Oro", "Platino", "Diamante","Grandmaster", "Master", "Challenger"]),
+    division: Option(str, "Division", choices=["VI", "III", "II", "I"]),
+    mensaje: Option(str, "Deja un mensaje libre.") = " "
+):
+    print('/recompensa_promo')
+    img_to_file = await img.to_file()
+    # await ctx.respond(f"Felicidades <@{ctx.author.id}> por llegar a {name} {division}.", file=await img.to_file())
+    await ctx.respond(f'{mensaje} {name} {division}', file=img_to_file)
+    await ctx.respond(f'{ctx.guild.owner_id}', view=ApproveView())
+
+@bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada.")
+async def recompensa_jugada(
+    ctx: discord.ApplicationContext, 
+    reward: Option(str, "Jugada", choices=["TripleKill", "QuadraKill", "PentaKill"]),
+    video:Option(discord.SlashCommandOptionType.attachment, "Usa video para subir un archivo grabado en tu pc. (Maximo 8MB).", required=False),
+    link: Option(str, "Usa link si su1biste tu jugada a una plataforma como Youtube, Twitch, etc.", required=False)
+):
+    print('/recompensa_jugada')
+
+    submission = link if link else ""
+    if video:
+        video_file = await video.to_file()
+        await ctx.respond(f' {reward}', file=video_file)
+    else:
+        await ctx.respond(f' {reward} {submission}')
+
+    await ctx.respond("", view=ApproveView())
 
 # @bot.slash_command(name="get_coins", description = "Get your 10 coins of the day.")
 # async def get_coins(ctx):
