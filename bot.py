@@ -8,21 +8,17 @@ from discord.ui import Modal, View, InputText, Button
 from discord.commands import Option
 import os
 import sys
-from supabase.client import Client, create_client
 from helpers import user_is_mod
+from transaction import supabase
 
 load_dotenv()
 bot = discord.Bot(intents=discord.Intents.all())
-
-url = os.getenv("url")
-key = os.getenv("public")
 
 if sys.argv[1] == "dev":
     DISCORD_TOKEN = os.getenv('DEVELOPMENT_DISCORD_TOKEN')
 elif sys.argv[1] == "prod":
     DISCORD_TOKEN = os.getenv('CLAN_ACADEMY_DISCORD_TOKEN')
 
-supabase: Client = create_client(url, key)
 
 clancoin_emote = '<:clancoin:974120483693924464>'
 pepega = '<:pepega:776918257785241630>'
