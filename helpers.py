@@ -9,20 +9,20 @@ def user_is_mod(ctx):
 
 
 class LeagueRanks:
-    def __init__(self, multiplier, reward, name, diplay_name) -> None:
+    def __init__(self, multiplier, reward, name, display_name) -> None:
         self.multiplier = multiplier
         self.reward = reward
         self.name = name
-        self.diplay_name = diplay_name
+        self.display_name = display_name
 
-iron        = LeagueRanks(name="iron"         , diplay_name="Hierro",       multiplier=1.0,   reward=100)
-bronze      = LeagueRanks(name="bronze"       , diplay_name="Bronce",       multiplier=1.5,   reward=150)
-silver      = LeagueRanks(name="silver"       , diplay_name="Plata",        multiplier=1.6,   reward=200)
-gold        = LeagueRanks(name="gold"         , diplay_name="Oro",          multiplier=1.7,   reward=250)
-platinum    = LeagueRanks(name="platinum"     , diplay_name="Platino",      multiplier=1.8,   reward=300)
-diamond     = LeagueRanks(name="diamond"      , diplay_name="Diamante",     multiplier=1.9,   reward=350)
-master      = LeagueRanks(name="master"       , diplay_name="Maestro",      multiplier=2.0,   reward=400)
-grandmaster = LeagueRanks(name="grandmaster"  , diplay_name="Gran Maestro", multiplier=2.5,   reward=450)
-challenger  = LeagueRanks(name="challenger"   , diplay_name="Retador",      multiplier=3.0,   reward=500)
+iron        = LeagueRanks(name="iron"         , display_name="Hierro",       multiplier=1.0,   reward=100.0)
+bronze      = LeagueRanks(name="bronze"       , display_name="Bronce",       multiplier=1.5,   reward=150.0)
+silver      = LeagueRanks(name="silver"       , display_name="Plata",        multiplier=1.6,   reward=200.0)
+gold        = LeagueRanks(name="gold"         , display_name="Oro",          multiplier=1.7,   reward=250.0)
+platinum    = LeagueRanks(name="platinum"     , display_name="Platino",      multiplier=1.8,   reward=300.0)
+diamond     = LeagueRanks(name="diamond"      , display_name="Diamante",     multiplier=1.9,   reward=350.0)
+master      = LeagueRanks(name="master"       , display_name="Maestro",      multiplier=2.0,   reward=400.0)
+grandmaster = LeagueRanks(name="grandmaster"  , display_name="Gran Maestro", multiplier=2.5,   reward=450.0)
+challenger  = LeagueRanks(name="challenger"   , display_name="Retador",      multiplier=3.0,   reward=500.0)
 
 divisions = ["0", "i", "ii", "iii", "iv"]
