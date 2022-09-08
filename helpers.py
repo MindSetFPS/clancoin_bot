@@ -7,6 +7,26 @@ def user_is_mod(ctx):
 
     return highest_guild_rol == highest_user_rol
 
+def user_time(seconds):
+    def return_plural(seconds, unidad):
+        return "s" if seconds > unidad * 2 else "" 
+    
+    second = 1
+    minute = 60
+    hour = minute * 60
+    day = hour * 24
+    month = day * 30
+    year = month * 12
+
+    if seconds > day:
+        return f'{int(seconds/day)} dia{return_plural(seconds, day)}'
+    if seconds > hour:
+        return f'{int(seconds/hour)} horas{return_plural(seconds, hour)}'
+    if seconds > minute:
+        return f'{int(seconds/minute)} minuto{return_plural(seconds, minute)}'
+    if  seconds < minute:
+        return f'{int(seconds)} segundos'
+
 
 class LeagueRanks:
     def __init__(self, multiplier, reward, name, display_name) -> None:

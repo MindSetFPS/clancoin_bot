@@ -1,12 +1,13 @@
-from dis import disco
+from unicodedata import name
 from peewee import *
 from dotenv import load_dotenv
 import discord
 from discord.ui import Modal, View, InputText, Button
 from discord.commands import Option
+from discord.ext import commands
 import os
 import sys
-from helpers import user_is_mod, iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
+from helpers import user_time, user_is_mod, iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
 from transaction import supabase, insert_promo_reward_transaction, insert_play_reward
 
 
@@ -47,9 +48,17 @@ async def on_member_join(member):
     await channel.send(f"<@{member.id}> recibiste 500 {clancoin_emote} Clan Coins.")
 
 @bot.slash_command(name="check_mod", description="¿Tienes el rango mas alto del servidor?")
+@commands.cooldown(1, 60*60*24*3, commands.BucketType.user)
 async def check_mod(ctx):
     print('/check_mod')
     await ctx.respond(user_is_mod(ctx))
+
+@bot.event
+async def on_application_command_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.respond(content=f'Vuelve a intentar en {user_time(error.retry_after)}', ephemeral=True)
+    else:
+        raise error
 
 class ApproveView(discord.ui.View):
     def __init__(self, ctx, command, division=None, tier=None, play=None):
@@ -155,22 +164,24 @@ async def recompensa_jugada(
 
     await ctx.respond("", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
 
-# @bot.slash_command(name="get_coins", description = "Get your 10 coins of the day.")
-# async def get_coins(ctx):
-#     username = ctx.author.name
-#     discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
-#     bot_full_user = bot.user.name + '#' + bot.user.discriminator
+@bot.slash_command(name="get_coins", description = "Get your 10 coins of the day.")
+@commands.cooldown(1, 20, commands.BucketType.user)
+async def get_coins(ctx):
+    username = ctx.author.name
+    discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
+    bot_full_user = bot.user.name + '#' + bot.user.discriminator
 
-#     #get current coins number
-#     coins = supabase.table("discord_user").select("coins").match({"discordUser":discord_full_user}).execute()
-#     current_coins = coins.data[0]["coins"]
-#     print(current_coins)
+    # #get current coins number
+    # coins = supabase.table("discord_user").select("coins").match({"discordUser":discord_full_user}).execute()
+    # current_coins = coins.data[0]["coins"]
+    # print(current_coins)
 
-#     update = supabase.table("discord_user").update({"coins": current_coins + 10 }).match({"discordUser":discord_full_user}).execute()
-#     transaction = supabase.table("transaction").insert({"transaction_type": "daily_reward", "amount": 10, "sent_by": bot_full_user, "received_by": discord_full_user}).execute()
+    # update = supabase.table("discord_user").update({"coins": current_coins + 10 }).match({"discordUser":discord_full_user}).execute()
+    # transaction = supabase.table("transaction").insert({"transaction_type": "daily_reward", "amount": 10, "sent_by": bot_full_user, "received_by": discord_full_user}).execute()
 
-#     # user = bot.get_user(user_id) or await bot.fetch_user(user_id)
-#     await ctx.respond(f"Ya recibiste tus monedas diarias, tienes {current_coins + 10} <:omegalul:776917394428919808>", ephemeral=True)
+    # user = bot.get_user(user_id) or await bot.fetch_user(user_id)
+    current_coins = 20
+    await ctx.respond(f"Ya recibiste tus monedas diarias, tienes {current_coins + 10} <:omegalul:776917394428919808>", ephemeral=True)
 
 @bot.slash_command(name="mis_clancoins", description="Mira cuantas Clan Coins tienes.")
 async def check_clancoins(ctx):
@@ -279,6 +290,14 @@ async def store(ctx):
     await ctx.respond(embeds=embeds, ephemeral=True)
 
 
+@bot.slash_command(name="comprar", description="Compra el objeto que quieras con tus Clan Coins.")
+async def buy(ctx: discord.ApplicationContext, name: str = False):
+    if name:
+        await ctx.respond(f'Comprar {name}')
+    else:
+        await ctx.respond("Mira los objetos de la tienda")
+
+
 @bot.slash_command(name = "hello", description = "Say hello to the bot")
 async def hello(ctx):
     # print(ctx.guild.members)
@@ -305,6 +324,8 @@ class MyModal(discord.ui.Modal):
             "image_url": self.children[3].value,
         }
 
+        embed = discord.Embed(title="Nuevo objeto")
+
         if len(self.children[4].value) > 0:
             code_and_amount = self.children[4].value.split(" ")
             print(code_and_amount)
@@ -317,12 +338,10 @@ class MyModal(discord.ui.Modal):
 
         supabase.table("item").insert(payload).execute()
 
-        embed = discord.Embed(title="Nuevo objeto")
         embed.add_field(name="Nombre", value=self.children[0].value)
         embed.add_field(name="Precio", value=self.children[1].value)
         embed.add_field(name="Descripcion", value=self.children[2].value)
         embed.set_image(url=self.children[3].value)
-
 
         await interaction.response.send_message(embeds=[embed], ephemeral=True)
 
