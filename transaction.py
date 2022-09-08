@@ -21,3 +21,6 @@ def insert_welcome_gift_transaction(sent_by, received_by, amount):
 
 def insert_promo_reward_transaction(sent_by, received_by, amount, transaction_type):
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
+
+def insert_play_reward(sent_by, received_by, amount, transaction_type):
+    new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)

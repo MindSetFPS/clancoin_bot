@@ -7,7 +7,7 @@ from discord.commands import Option
 import os
 import sys
 from helpers import user_is_mod, iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import supabase, insert_promo_reward_transaction
+from transaction import supabase, insert_promo_reward_transaction, insert_play_reward
 
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
@@ -52,17 +52,36 @@ async def check_mod(ctx):
     await ctx.respond(user_is_mod(ctx))
 
 class ApproveView(discord.ui.View):
-    def __init__(self, ctx, division, tier, command):
+    def __init__(self, ctx, command, division=None, tier=None, play=None):
         super().__init__()
 
         self.author = ctx.author
         self.command = command
         self.division = division
         self.tier = tier
+        self.play = play
 
         aprove_button = Button(label="Aceptar", style=discord.ButtonStyle.primary, emoji="👍")
         async def aprove_callback(interaction):
             if user_is_mod(interaction):
+                if self.command == "recompensa_jugada":
+                    aprover_mod = interaction.user.name + '#' + interaction.user.discriminator
+                    author_name = self.author.name + '#' + self.author.discriminator
+                    print("reclamando recompensa por jugada")
+                    if self.play == "TripleKill":
+                        print('Recompensa de triple') 
+                        insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=50, transaction_type=self.play.lower())
+                        await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 50 Clan Coins.", view=None)
+                    if self.play == "QuadraKill": 
+                        print('Recompensa de quadra')
+                        insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=150, transaction_type=self.play.lower())
+                        await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 150 Clan Coins.", view=None)
+                    if self.play == "PentaKill":
+                        print('Recompensa de penta') 
+                        insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=250, transaction_type=self.play.lower())
+                        await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 250 Clan Coins.", view=None)
+
+
                 if self.command == "recompensa_promo":
                     for tier in tiers:
                         print(self.tier)
@@ -120,20 +139,21 @@ async def recompensa_division(
 @bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada.")
 async def recompensa_jugada(
     ctx: discord.ApplicationContext, 
-    reward: Option(str, "Jugada", choices=["TripleKill", "QuadraKill", "PentaKill"]),
+    jugada: Option(str, "Jugada", choices=["TripleKill", "QuadraKill", "PentaKill"]),
     video:Option(discord.SlashCommandOptionType.attachment, "Usa video para subir un archivo grabado en tu pc. (Maximo 8MB).", required=False),
     link: Option(str, "Usa link si su1biste tu jugada a una plataforma como Youtube, Twitch, etc.", required=False)
 ):
+    await ctx.defer()
     print('/recompensa_jugada')
-
     submission = link if link else ""
     if video:
         video_file = await video.to_file()
-        await ctx.respond(f' {reward}', file=video_file)
+        # video_file = video
+        await ctx.send_followup(content=f'{jugada}', file=video_file)
     else:
-        await ctx.respond(f' {reward} {submission}')
+        await ctx.respond(f' {jugada} {submission}')
 
-    await ctx.respond("", view=ApproveView(command=ctx.command, ctx=ctx))
+    await ctx.respond("", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
 
 # @bot.slash_command(name="get_coins", description = "Get your 10 coins of the day.")
 # async def get_coins(ctx):
