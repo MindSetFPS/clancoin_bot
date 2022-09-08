@@ -6,9 +6,11 @@ from discord.ui import Modal, View, InputText, Button
 from discord.commands import Option
 import os
 import sys
-from helpers import user_is_mod
-from transaction import supabase
+from helpers import user_is_mod, iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
+from transaction import supabase, insert_promo_reward_transaction
 
+
+tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
 load_dotenv()
 bot = discord.Bot(intents=discord.Intents.all())
 
@@ -38,6 +40,7 @@ async def on_member_join(member):
             "received_by": discord_full_user
         }).execute()
 
+
     insertion = supabase.table("discord_user").insert({"discordUser":discord_full_user, "coins": 500}).execute()
 
     channel = discord.utils.get(member.guild.channels, name="👋・bienvenidas")
@@ -49,41 +52,70 @@ async def check_mod(ctx):
     await ctx.respond(user_is_mod(ctx))
 
 class ApproveView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, ctx, division, tier, command):
         super().__init__()
+
+        self.author = ctx.author
+        self.command = command
+        self.division = division
+        self.tier = tier
 
         aprove_button = Button(label="Aceptar", style=discord.ButtonStyle.primary, emoji="👍")
         async def aprove_callback(interaction):
             if user_is_mod(interaction):
-                await interaction.response.edit_message(content="Aprobado, recibe 300 Clan Coins.", view=None)
+                if self.command == "recompensa_promo":
+                    for tier in tiers:
+                        print(self.tier)
+                        print(tier.display_name)
+                        reward = 0
+                        if tier.display_name == self.tier:
+                            print("player is " + tier.display_name)
+                            aprover_mod = interaction.user.name + '#' + interaction.user.discriminator
+                            author_name = self.author.name + '#' + self.author.discriminator
+                            reward = tier.reward
+                            if self.division == "IV":
+                                print(tier.multiplier * tier.reward)
+                                reward = reward * tier.multiplier
+                            insert_promo_reward_transaction(sent_by=aprover_mod, received_by=author_name, amount=reward, transaction_type=f'{tier.name}_{self.division}')
+                            print('reward sent')
+                            await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} {int(reward)} Clan Coins.", view=None)
+                            break
+                        # insert_promo_reward_transaction(sent_by=interaction.user, received_by=self.author_id, amount=tier.reward, transaction_type=f'{tier.name}_{self.tier.lower()}')
             else:
                 await interaction.response.send_message("Un moderador te dará tu recompensa.", ephemeral=True)
+        
         reject_button = Button(label="Rechazar", style=discord.ButtonStyle.red, emoji="👎")
         async def reject_callback(interaction):
             if user_is_mod(interaction):
                 await interaction.response.edit_message(content="Revisa tu aporte.", view=None)
             else:
                 await interaction.response.send_message("Un moderador te dará tu recompensa.", ephemeral=True)
+
+        print_button = Button(label="test", style=discord.ButtonStyle.grey, emoji="🔥")
+        async def test_callback(interaction):
+            await interaction.response.send_message(self.command)
         
         aprove_button.callback = aprove_callback
         reject_button.callback = reject_callback
+        print_button.callback = test_callback
 
         self.add_item(aprove_button)
         self.add_item(reject_button)
+        self.add_item(print_button)
 
 @bot.slash_command(name="recompensa_promo", description="Reclama tu recompensa por ganar tu promo.")
 async def recompensa_division(
     ctx: discord.ApplicationContext,
     img: Option(discord.SlashCommandOptionType.attachment, "Atachment"),
-    name: Option(str, "Division", choices=["Hierro","Bronce", "Plata", "Oro", "Platino", "Diamante","Grandmaster", "Master", "Challenger"]),
-    division: Option(str, "Division", choices=["VI", "III", "II", "I"]),
+    tier: Option(str, "Tier", choices=[iron.display_name , bronze.display_name , silver.display_name, gold.display_name, platinum.display_name, diamond.display_name, master.display_name, grandmaster.display_name, challenger.display_name ]),
+    division: Option(str, "Division", choices=["IV", "III", "II", "I"]),
     mensaje: Option(str, "Deja un mensaje libre.") = " "
 ):
     print('/recompensa_promo')
     img_to_file = await img.to_file()
     # await ctx.respond(f"Felicidades <@{ctx.author.id}> por llegar a {name} {division}.", file=await img.to_file())
-    await ctx.respond(f'{mensaje} {name} {division}', file=img_to_file)
-    await ctx.respond(f'{ctx.guild.owner_id}', view=ApproveView())
+    await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
+    await ctx.respond(f'{ctx.guild.owner_id}', view=ApproveView(ctx=ctx, tier=tier, division=division, command="recompensa_promo"))
 
 @bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada.")
 async def recompensa_jugada(
@@ -101,7 +133,7 @@ async def recompensa_jugada(
     else:
         await ctx.respond(f' {reward} {submission}')
 
-    await ctx.respond("", view=ApproveView())
+    await ctx.respond("", view=ApproveView(command=ctx.command, ctx=ctx))
 
 # @bot.slash_command(name="get_coins", description = "Get your 10 coins of the day.")
 # async def get_coins(ctx):
