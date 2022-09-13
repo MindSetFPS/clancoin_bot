@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 import discord
 from discord.ui import Modal, View, InputText, Button
 from discord.commands import Option
-from discord.ext import commands
+from discord.ext import commands, pages
 import os
 import sys
-from helpers import user_time, user_is_mod, iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import supabase, insert_promo_reward_transaction, insert_play_reward
+from helpers import user_time, user_is_mod, move_backwards, move_forward, iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
+from transaction import get_store_items, supabase, insert_promo_reward_transaction, insert_play_reward
 
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
@@ -21,6 +21,7 @@ elif sys.argv[1] == "prod":
     DISCORD_TOKEN = os.getenv('CLAN_ACADEMY_DISCORD_TOKEN')
 
 clancoin_emote = '<:clancoin:974120483693924464>'
+clancoin_emote_id = 974120483693924464
 pepega = '<:pepega:776918257785241630>'
 
 @bot.event
@@ -269,7 +270,91 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
     else:
         await ctx.send_followup(content="No tienes permiso para hacer eso.")
 
-    # await ctx.send_followup(content=new_list)
+
+class Store():
+    def __init__(self) -> None:
+        self.buy_button = None
+        self.cancel_button = None
+        self.items = get_store_items()
+        self.index = 0
+        self.interaction_buttons = self.view(self.index)
+        self.prev = pages.PaginatorButton(button_type="prev", emoji="⏪", disabled=False, style=discord.ButtonStyle.blurple)
+        self.indicator = pages.PaginatorButton(button_type="page_indicator", disabled=True)
+        self.next = pages.PaginatorButton(button_type="next", emoji="⏩", style=discord.ButtonStyle.blurple)
+
+        async def next_item(interaction: discord.Interaction):
+            print(self.paginator.current_page)
+            self.index = self.paginator.current_page
+            print(self.paginator.current_page)
+            self.interaction_buttons.clear_items()
+            self.interaction_buttons.add_item(
+                 discord.ui.Button(
+                    label=f'Comprar por {self.items.data[move_forward(self.items.data, self.paginator.current_page)]["price"]} Clan Coins', 
+                    row=1,
+                    style=discord.ButtonStyle.green, 
+                    emoji=clancoin_emote, 
+                )
+            )
+            self.interaction_buttons.add_item(
+                discord.ui.Button(
+                    label="Cancelar",
+                    style=discord.ButtonStyle.red,
+                    emoji="✖️",
+                    row=1
+                )
+            )
+            await self.paginator.goto_page(move_forward(self.items.data, self.paginator.current_page), interaction=interaction)
+        self.next.callback = next_item
+
+        self.paginator = pages.Paginator(
+            pages=self.embed(), 
+            custom_view=self.interaction_buttons, 
+            loop_pages=True, 
+            use_default_buttons=False
+        )
+        # self.index = self.paginator.current_page
+        self.paginator.add_button(self.prev)
+        self.paginator.add_button(self.indicator)
+        self.paginator.add_button(self.next)
+
+    def embed(self):
+        embeds = []
+        for store_item in self.items.data:
+            emb = discord.Embed(title=store_item["name"], description=f'{store_item["description"]} {clancoin_emote} ')
+            emb.set_image(url=store_item["image_url"])
+            # emb.add_field(name=store_item["price"], value="dfsd")
+            emb.set_footer(text=f'{store_item["price"]} {clancoin_emote}')
+            embeds.append(emb)
+        return embeds
+    
+    def view(self, index):
+        view = discord.ui.View()
+        print(index)
+        self.buy_button = discord.ui.Button(
+            label=f'Comprar por {self.items.data[index]["price"]} Clan Coins', 
+            style=discord.ButtonStyle.green,
+            emoji=clancoin_emote, 
+            row=1
+        )
+
+        cancel_button = discord.ui.Button(
+            label="Cancelar",
+            style=discord.ButtonStyle.red,
+            emoji="✖️",
+            row=1
+        )
+        view.add_item(self.buy_button)
+        view.add_item(cancel_button)
+        return view
+
+@bot.slash_command(name="strings")
+async def pagetest_strings(ctx: discord.ApplicationContext):
+    """Demonstrates passing a list of strings as pages."""
+
+    # paginator = pages.Paginator(pages=Store.embed(), custom_view=Store.view(), loop_pages=True )
+    # store = Store()
+    paginator = Store().paginator
+    await paginator.respond(ctx.interaction, ephemeral=True)
 
 @bot.slash_command(name="tienda", description="Mira los objetos en la tienda de Clan.")
 async def store(ctx):
