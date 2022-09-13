@@ -35,6 +35,26 @@ class LeagueRanks:
         self.name = name
         self.display_name = display_name
 
+def move_forward(arr, pos):
+    lenght = len(arr) - 1
+    print('len ' + str(lenght))
+    next_position = pos + 1
+
+    if next_position > lenght:
+        return 0
+    else:
+        return next_position
+
+def move_backwards(arr, pos):
+    lenght = len(arr) - 1
+    print('len ' + str(lenght))
+    next_position = pos - 1
+
+    if next_position < 0:
+        return lenght
+    else:
+        return next_position
+
 iron        = LeagueRanks(name="iron"         , display_name="Hierro",       multiplier=1.0,   reward=100.0)
 bronze      = LeagueRanks(name="bronze"       , display_name="Bronce",       multiplier=1.5,   reward=150.0)
 silver      = LeagueRanks(name="silver"       , display_name="Plata",        multiplier=1.6,   reward=200.0)
