@@ -25,5 +25,12 @@ def insert_promo_reward_transaction(sent_by, received_by, amount, transaction_ty
 def insert_play_reward(sent_by, received_by, amount, transaction_type):
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
 
+def insert_item_buy(sent_by, received_by, amount, transaction_type):
+    new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
+
 def get_store_items():
     return supabase.table("item").select("*").execute()
+
+def get_user_coins(user):
+    coins = supabase.table("discord_user").select("coins").eq("discordUser", user).execute()
+    return coins

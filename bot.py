@@ -1,4 +1,5 @@
 from unicodedata import name
+from typing import Union
 from peewee import *
 from dotenv import load_dotenv
 import discord
@@ -7,8 +8,9 @@ from discord.commands import Option
 from discord.ext import commands, pages
 import os
 import sys
-from helpers import user_time, user_is_mod, move_backwards, move_forward, iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import get_store_items, supabase, insert_promo_reward_transaction, insert_play_reward
+from functools import partial
+from helpers import user_time, user_is_mod, move_backwards, move_forward, user_to_string ,iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
+from transaction import get_store_items, supabase, insert_promo_reward_transaction, insert_play_reward, get_user_coins, insert_item_buy
 
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
@@ -278,44 +280,24 @@ class Store():
         self.items = get_store_items()
         self.index = 0
         self.interaction_buttons = self.view(self.index)
+        self.paginator = pages.Paginator(pages=self.embed(), custom_view=self.interaction_buttons, loop_pages=True, use_default_buttons=False)
         self.prev = pages.PaginatorButton(button_type="prev", emoji="⏪", disabled=False, style=discord.ButtonStyle.blurple)
         self.indicator = pages.PaginatorButton(button_type="page_indicator", disabled=True)
         self.next = pages.PaginatorButton(button_type="next", emoji="⏩", style=discord.ButtonStyle.blurple)
 
         async def next_item(interaction: discord.Interaction):
-            print(self.paginator.current_page)
             self.index = self.paginator.current_page
-            print(self.paginator.current_page)
             self.interaction_buttons.clear_items()
-            self.interaction_buttons.add_item(
-                 discord.ui.Button(
-                    label=f'Comprar por {self.items.data[move_forward(self.items.data, self.paginator.current_page)]["price"]} Clan Coins', 
-                    row=1,
-                    style=discord.ButtonStyle.green, 
-                    emoji=clancoin_emote, 
-                )
-            )
-            self.interaction_buttons.add_item(
-                discord.ui.Button(
-                    label="Cancelar",
-                    style=discord.ButtonStyle.red,
-                    emoji="✖️",
-                    row=1
-                )
-            )
+            self.interaction_buttons.add_item(BuyButton(index=move_forward(self.items.data, self.paginator.current_page), user="MindsetFPS#7717", label="Cash", price=self.items.data[self.index]["price"], store_item=self.items.data[move_forward(self.items.data, self.paginator.current_page)]))
+            self.interaction_buttons.add_item(discord.ui.Button(label="Cancelar",style=discord.ButtonStyle.red,emoji="✖️",row=1))
             await self.paginator.goto_page(move_forward(self.items.data, self.paginator.current_page), interaction=interaction)
         self.next.callback = next_item
 
-        self.paginator = pages.Paginator(
-            pages=self.embed(), 
-            custom_view=self.interaction_buttons, 
-            loop_pages=True, 
-            use_default_buttons=False
-        )
         # self.index = self.paginator.current_page
         self.paginator.add_button(self.prev)
         self.paginator.add_button(self.indicator)
         self.paginator.add_button(self.next)
+        self.paginator.add_item(BuyButton(index=move_forward(self.items.data, self.paginator.current_page), user="MindsetFPS#7717", label="Me siento naruto", price=self.items.data[self.index]["price"]))
 
     def embed(self):
         embeds = []
@@ -325,18 +307,13 @@ class Store():
             # emb.add_field(name=store_item["price"], value="dfsd")
             emb.set_footer(text=f'{store_item["price"]} {clancoin_emote}')
             embeds.append(emb)
+            print(type(store_item))
         return embeds
     
     def view(self, index):
         view = discord.ui.View()
         print(index)
-        self.buy_button = discord.ui.Button(
-            label=f'Comprar por {self.items.data[index]["price"]} Clan Coins', 
-            style=discord.ButtonStyle.green,
-            emoji=clancoin_emote, 
-            row=1
-        )
-
+        self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user="MindsetFPS#7717", label="Cash", price=self.items.data[self.index]["price"], store_item=self.items.data[self.index])
         cancel_button = discord.ui.Button(
             label="Cancelar",
             style=discord.ButtonStyle.red,
@@ -346,6 +323,64 @@ class Store():
         view.add_item(self.buy_button)
         view.add_item(cancel_button)
         return view
+
+class BuyButton(discord.ui.Button):
+        def __init__(
+            self,
+            label: str = None,
+            emoji: Union[str, discord.Emoji, discord.PartialEmoji] = None,
+            style: discord.ButtonStyle = discord.ButtonStyle.green,
+            disabled: bool = False,
+            custom_id: str = None,
+            row: int = 0,
+            user: str = "MindsetFPS#7717",
+            index: int = 0,
+            price: int =0,
+            store_item: dict = None
+        ):
+            super().__init__(
+                emoji=emoji,
+                style=style,
+                disabled=disabled,
+                custom_id=custom_id,
+                row=row,
+                label=label
+            )
+            self.emoji: Union[str, discord.Emoji, discord.PartialEmoji] = emoji
+            self.style = style
+            self.disabled = disabled
+            self.paginator = None
+            self.user = user
+            self.price = price
+            self.store_item = store_item
+
+        async def callback(self, interaction):
+            print("price: ", self.price)
+            coins = get_user_coins(self.user)
+            print(coins.data)
+            print(*self.store_item.items())
+            if coins.data[0]["coins"] < self.price:
+                await interaction.response.send_message("No tienes suficientes Clan Coins.")
+            else:
+                if self.store_item["code"] != None:
+                    if self.store_item["amount"] > 0:
+                        embed = discord.Embed(
+                            title=f'Compraste {self.store_item["name"]}.',
+                            description="En un momento recibiras tu objeto.",
+                            color=discord.Colour.blurple(),
+                        )
+                        embed.set_image(url=self.store_item["image_url"])
+
+                        transaction_name = f"buy_item_{str(self.store_item['id'])}"     
+                        insert_item_buy(sent_by=user_to_string(interaction), received_by="juanito_gamer#4951", amount=self.price, transaction_type=transaction_name)
+                        await interaction.user.send(f"Tu codigo para masterclass es {self.store_item['code']}")
+                        await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}.', view=None, embed=embed)
+                    else:
+                        await interaction.response.edit_message(content="Nos hemos quedado sin codigos, por favor vuelve a intentarlo despues.", view=None, embed=None)
+                        await interaction.guild.owner.send(f'Nos hemos quedado el codigo {self.store_item["code"]} para {self.store_item["name"]}, considera añadir mas unidades o crear un nuevo objeto.')
+                        
+
+
 
 @bot.slash_command(name="strings")
 async def pagetest_strings(ctx: discord.ApplicationContext):

@@ -7,6 +7,9 @@ def user_is_mod(ctx):
 
     return highest_guild_rol == highest_user_rol
 
+def user_to_string(ctx):
+    return ctx.user.name + '#' + ctx.user.discriminator 
+
 def user_time(seconds):
     def return_plural(seconds, unidad):
         return "s" if seconds > unidad * 2 else "" 
@@ -35,7 +38,7 @@ class LeagueRanks:
         self.name = name
         self.display_name = display_name
 
-def move_forward(arr, pos):
+def move_forward(arr, pos=0):
     lenght = len(arr) - 1
     print('len ' + str(lenght))
     next_position = pos + 1
