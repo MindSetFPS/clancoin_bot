@@ -360,8 +360,8 @@ class BuyButton(discord.ui.Button):
                     await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}', view=None, embed=None)
                     await interaction.followup.send(content=f"<@{interaction.user.id}> compró {self.store_item['name']}. En un momento <@{interaction.guild.owner_id}> se contactará para entregar el premio.")
 
-@bot.slash_command(name="strings")
-async def pagetest_strings(ctx: discord.ApplicationContext):
+@bot.slash_command(name="tienda", description="Mira la tienda de Clan y compra tus items favoritos.")
+async def shop(ctx: discord.ApplicationContext):
     paginator = Store(user_to_string(ctx=ctx)).paginator
     await paginator.respond(ctx.interaction, ephemeral=True)
 
