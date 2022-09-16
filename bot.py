@@ -152,7 +152,7 @@ async def recompensa_jugada(
 
     await ctx.respond("", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
 
-@bot.slash_command(name="get_coins", description = "Get your 10 coins of the day.")
+@bot.slash_command(name="monedas_diarias", description ="Obtén tus monedas diarias.")
 @commands.cooldown(1, 60 * 60 * 24, commands.BucketType.user)
 async def get_coins(ctx):
     username = ctx.author.name
