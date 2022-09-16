@@ -9,7 +9,8 @@ from discord.ext import commands, pages
 import os
 import sys
 from functools import partial
-from helpers import user_time, user_is_mod, move_backwards, move_forward, user_to_string ,iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
+from helpers import user_time, user_is_mod, move_backwards, move_forward, user_to_string
+from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
 from transaction import get_store_items, supabase, insert_promo_reward_transaction, insert_play_reward, get_user_coins, insert_item_buy, set_new_balance
 from discord.ext.commands import UserConverter
 import operator
