@@ -24,7 +24,7 @@ def user_time(seconds):
     if seconds > day:
         return f'{int(seconds/day)} dia{return_plural(seconds, day)}'
     if seconds > hour:
-        return f'{int(seconds/hour)} horas{return_plural(seconds, hour)}'
+        return f'{int(seconds/hour)} hora{return_plural(seconds, hour)}'
     if seconds > minute:
         return f'{int(seconds/minute)} minuto{return_plural(seconds, minute)}'
     if  seconds < minute:

@@ -12,6 +12,7 @@ from functools import partial
 from helpers import user_time, user_is_mod, move_backwards, move_forward, user_to_string ,iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
 from transaction import get_store_items, supabase, insert_promo_reward_transaction, insert_play_reward, get_user_coins, insert_item_buy, set_new_balance
 from discord.ext.commands import UserConverter
+import operator
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
 load_dotenv()
@@ -32,29 +33,18 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    # print(member.guild)
     bot_full_user = bot.user.name + '#' + bot.user.discriminator
     discord_full_user = member.name + '#' + member.discriminator
     print(member.name)
-
     transaction = supabase.table("transaction").insert({
             "transaction_type": "welcome_gift", 
             "amount" : 500, 
             "sent_by": bot_full_user, 
             "received_by": discord_full_user
         }).execute()
-
-
     insertion = supabase.table("discord_user").insert({"discordUser":discord_full_user, "coins": 500}).execute()
-
     channel = discord.utils.get(member.guild.channels, name="👋・bienvenidas")
     await channel.send(f"<@{member.id}> recibiste 500 {clancoin_emote} Clan Coins.")
-
-@bot.slash_command(name="check_mod", description="¿Tienes el rango mas alto del servidor?")
-@commands.cooldown(1, 60*60*24*3, commands.BucketType.user)
-async def check_mod(ctx):
-    print('/check_mod')
-    await ctx.respond(user_is_mod(ctx))
 
 @bot.event
 async def on_application_command_error(ctx, error):
@@ -79,7 +69,6 @@ class ApproveView(discord.ui.View):
                 if self.command == "recompensa_jugada":
                     aprover_mod = interaction.user.name + '#' + interaction.user.discriminator
                     author_name = self.author.name + '#' + self.author.discriminator
-                    print("reclamando recompensa por jugada")
                     if self.play == "TripleKill":
                         print('Recompensa de triple') 
                         insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=50, transaction_type=self.play.lower())
@@ -98,7 +87,6 @@ class ApproveView(discord.ui.View):
                     for tier in tiers:
                         reward = 0
                         if tier.display_name == self.tier:
-                            print("player is " + tier.display_name)
                             aprover_mod = interaction.user.name + '#' + interaction.user.discriminator
                             author_name = self.author.name + '#' + self.author.discriminator
                             reward = tier.reward
@@ -165,19 +153,18 @@ async def recompensa_jugada(
     await ctx.respond("", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
 
 @bot.slash_command(name="get_coins", description = "Get your 10 coins of the day.")
-@commands.cooldown(1, 20, commands.BucketType.user)
+@commands.cooldown(1, 60 * 60 * 24, commands.BucketType.user)
 async def get_coins(ctx):
     username = ctx.author.name
     discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
     bot_full_user = bot.user.name + '#' + bot.user.discriminator
 
-    # #get current coins number
-    # coins = supabase.table("discord_user").select("coins").match({"discordUser":discord_full_user}).execute()
-    # current_coins = coins.data[0]["coins"]
-    # update = supabase.table("discord_user").update({"coins": current_coins + 10 }).match({"discordUser":discord_full_user}).execute()
-    # transaction = supabase.table("transaction").insert({"transaction_type": "daily_reward", "amount": 10, "sent_by": bot_full_user, "received_by": discord_full_user}).execute()
-    # user = bot.get_user(user_id) or await bot.fetch_user(user_id)
-    current_coins = 20
+    #get current coins number
+    coins = get_user_coins(user=user_to_string(ctx))
+    current_coins = coins.data[0]["coins"]
+    update = set_new_balance(user=user_to_string(ctx), price=10, operation=operator.add)
+    transaction = supabase.table("transaction").insert({"transaction_type": "daily_reward", "amount": 10, "sent_by": bot_full_user, "received_by": discord_full_user}).execute()
+    
     await ctx.respond(f"Ya recibiste tus monedas diarias, tienes {current_coins + 10} <:omegalul:776917394428919808>", ephemeral=True)
 
 @bot.slash_command(name="mis_clancoins", description="Mira cuantas Clan Coins tienes.")
@@ -193,7 +180,6 @@ async def check_clancoins(ctx):
         await ctx.respond(f"Tienes {current_coins} <:clancoin:974120483693924464> ", ephemeral=True)
     else:
         await ctx.respond(f"Tienes {0} <:clancoin:974120483693924464> ", ephemeral=True)
-
 
 @bot.slash_command(name="dar_monedas_a_usuario", description="Da ClanCoins a un usario.")
 async def give_clancoins(ctx, member: discord.Member, amount: int):
@@ -306,7 +292,7 @@ class Store():
     
     def view(self, index):
         view = discord.ui.View()
-        self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user="MindsetFPS#7717", label=f'Comprar por {clancoin_emote} {self.items.data[index]["price"]}', store_item=self.items.data[self.index])
+        self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user=self.user, label=f'Comprar por {clancoin_emote} {self.items.data[index]["price"]}', store_item=self.items.data[self.index])
         cancel_button = discord.ui.Button(
             label="Cancelar",
             style=discord.ButtonStyle.red,
@@ -347,24 +333,21 @@ class BuyButton(discord.ui.Button):
 
         async def callback(self, interaction):
             price = self.store_item["price"]
-            print("price: ", price)
             coins = get_user_coins(self.user)
-            print(*self.store_item.items())
+            print("price: ", price, "user clancoins: ", coins.data[0]['coins'])
+            print(price > coins.data[0]['coins'])
+
             if coins.data[0]["coins"] < price:
                 await interaction.response.send_message("No tienes suficientes Clan Coins.")
             else:
                 if self.store_item["code"] != None:
                     if self.store_item["amount"] > 0:
-                        embed = discord.Embed(
-                            title=f'Compraste {self.store_item["name"]}.',
-                            description="En un momento recibiras tu objeto.",
-                            color=discord.Colour.blurple(),
-                        )
+                        embed = discord.Embed(title=f'Compraste {self.store_item["name"]}.', description="En un momento recibiras tu objeto.", color=discord.Colour.blurple())
                         embed.set_image(url=self.store_item["image_url"])
 
                         transaction_name = f"buy_item_{str(self.store_item['id'])}"     
                         insert_item_buy(sent_by=bot.user.name + '#' + bot.user.discriminator, received_by=user_to_string(interaction), amount=self.store_item['price'], transaction_type=transaction_name) 
-                        set_new_balance(user=self.user, price=self.store_item["price"])
+                        set_new_balance(user=self.user, price=self.store_item["price"], operation=operator.sub)
                         await interaction.user.send(f"Tu codigo para masterclass es {self.store_item['code']}")
                         await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}.', view=None, embed=embed)
                     else:
@@ -373,12 +356,12 @@ class BuyButton(discord.ui.Button):
                 else:
                     
                     # await interaction.response.send_message()
+                    set_new_balance(user=self.user, price=self.store_item["price"], operation=operator.sub)
                     await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}', view=None, embed=None)
                     await interaction.followup.send(content=f"<@{interaction.user.id}> compró {self.store_item['name']}. En un momento <@{interaction.guild.owner_id}> se contactará para entregar el premio.")
 
 @bot.slash_command(name="strings")
 async def pagetest_strings(ctx: discord.ApplicationContext):
-    print(user_to_string(ctx=ctx))
     paginator = Store(user_to_string(ctx=ctx)).paginator
     await paginator.respond(ctx.interaction, ephemeral=True)
 
@@ -405,7 +388,6 @@ class MyModal(discord.ui.Modal):
 
         if len(self.children[4].value) > 0:
             code_and_amount = self.children[4].value.split(" ")
-            print(code_and_amount)
 
             payload["code"] = code_and_amount[0]
             payload["amount"] = code_and_amount[1]
@@ -431,7 +413,6 @@ async def add_new_item(ctx):
     highest_guild_rol = guild_roles[len(guild_roles) - 1].name
     
     if highest_guild_rol == highest_user_rol:
-        print("User is in the highest role, he is authorized to use this command")
         modal = MyModal(title="Modal via Slash Command")
         await ctx.send_modal(modal)
     else:
