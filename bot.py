@@ -10,8 +10,8 @@ import os
 import sys
 from functools import partial
 from helpers import user_time, user_is_mod, move_backwards, move_forward, user_to_string ,iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import get_store_items, supabase, insert_promo_reward_transaction, insert_play_reward, get_user_coins, insert_item_buy
-
+from transaction import get_store_items, supabase, insert_promo_reward_transaction, insert_play_reward, get_user_coins, insert_item_buy, set_new_balance
+from discord.ext.commands import UserConverter
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
 load_dotenv()
@@ -96,8 +96,6 @@ class ApproveView(discord.ui.View):
 
                 if self.command == "recompensa_promo":
                     for tier in tiers:
-                        print(self.tier)
-                        print(tier.display_name)
                         reward = 0
                         if tier.display_name == self.tier:
                             print("player is " + tier.display_name)
@@ -105,7 +103,6 @@ class ApproveView(discord.ui.View):
                             author_name = self.author.name + '#' + self.author.discriminator
                             reward = tier.reward
                             if self.division == "IV":
-                                print(tier.multiplier * tier.reward)
                                 reward = reward * tier.multiplier
                             insert_promo_reward_transaction(sent_by=aprover_mod, received_by=author_name, amount=reward, transaction_type=f'{tier.name}_{self.division}')
                             print('reward sent')
@@ -177,11 +174,8 @@ async def get_coins(ctx):
     # #get current coins number
     # coins = supabase.table("discord_user").select("coins").match({"discordUser":discord_full_user}).execute()
     # current_coins = coins.data[0]["coins"]
-    # print(current_coins)
-
     # update = supabase.table("discord_user").update({"coins": current_coins + 10 }).match({"discordUser":discord_full_user}).execute()
     # transaction = supabase.table("transaction").insert({"transaction_type": "daily_reward", "amount": 10, "sent_by": bot_full_user, "received_by": discord_full_user}).execute()
-
     # user = bot.get_user(user_id) or await bot.fetch_user(user_id)
     current_coins = 20
     await ctx.respond(f"Ya recibiste tus monedas diarias, tienes {current_coins + 10} <:omegalul:776917394428919808>", ephemeral=True)
@@ -196,7 +190,6 @@ async def check_clancoins(ctx):
 
     if len(coins.data) > 0:
         current_coins = coins.data[0]["coins"]
-        print(current_coins)
         await ctx.respond(f"Tienes {current_coins} <:clancoin:974120483693924464> ", ephemeral=True)
     else:
         await ctx.respond(f"Tienes {0} <:clancoin:974120483693924464> ", ephemeral=True)
@@ -238,7 +231,6 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
     
     if highest_guild_rol == highest_user_rol:
         for user in new_list:
-            print(user)
             user_clean = user.lstrip()
             discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
             transaction_exists = supabase.table("transaction").select('*').eq('transaction_type', 'welcome_gift').eq('received_by', user_clean).execute()
@@ -259,9 +251,6 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
                 assert len(transaction.data) > 0
 
                 if len(user_row.data) > 0:
-                    print(user_row)
-                    print(user_row.data)
-                    print(user_row.data[0]["coins"])
                     new_coin_amount = user_row.data[0]["coins"] + amount
                     supabase.table("discord_user").update({"coins": new_coin_amount}).eq("discordUser", user_clean).execute()
                 
@@ -272,14 +261,14 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
     else:
         await ctx.send_followup(content="No tienes permiso para hacer eso.")
 
-
 class Store():
-    def __init__(self) -> None:
+    def __init__(self, user) -> None:
         self.buy_button = None
         self.cancel_button = None
         self.items = get_store_items()
+        self.user = user
         self.index = 0
-        self.interaction_buttons = self.view(self.index)
+        self.interaction_buttons = self.view(index=0)
         self.paginator = pages.Paginator(pages=self.embed(), custom_view=self.interaction_buttons, loop_pages=True, use_default_buttons=False)
         self.prev = pages.PaginatorButton(button_type="prev", emoji="⏪", disabled=False, style=discord.ButtonStyle.blurple)
         self.indicator = pages.PaginatorButton(button_type="page_indicator", disabled=True)
@@ -288,7 +277,13 @@ class Store():
         async def next_item(interaction: discord.Interaction):
             self.index = self.paginator.current_page
             self.interaction_buttons.clear_items()
-            self.interaction_buttons.add_item(BuyButton(index=move_forward(self.items.data, self.paginator.current_page), user="MindsetFPS#7717", label="Cash", price=self.items.data[self.index]["price"], store_item=self.items.data[move_forward(self.items.data, self.paginator.current_page)]))
+            self.interaction_buttons.add_item(
+                BuyButton(
+                    index=move_forward(self.items.data, self.paginator.current_page), 
+                    user=self.user, 
+                    label=f'Comprar por {clancoin_emote} {self.items.data[move_forward(self.items.data, self.paginator.current_page)]["price"]}',
+                    store_item=self.items.data[move_forward(self.items.data, self.paginator.current_page)])
+            )
             self.interaction_buttons.add_item(discord.ui.Button(label="Cancelar",style=discord.ButtonStyle.red,emoji="✖️",row=1))
             await self.paginator.goto_page(move_forward(self.items.data, self.paginator.current_page), interaction=interaction)
         self.next.callback = next_item
@@ -297,7 +292,7 @@ class Store():
         self.paginator.add_button(self.prev)
         self.paginator.add_button(self.indicator)
         self.paginator.add_button(self.next)
-        self.paginator.add_item(BuyButton(index=move_forward(self.items.data, self.paginator.current_page), user="MindsetFPS#7717", label="Me siento naruto", price=self.items.data[self.index]["price"]))
+        # self.paginator.add_item(BuyButton(index=move_forward(self.items.data, self.paginator.current_page), user="MindsetFPS#7717", label="Me siento naruto"))
 
     def embed(self):
         embeds = []
@@ -307,13 +302,11 @@ class Store():
             # emb.add_field(name=store_item["price"], value="dfsd")
             emb.set_footer(text=f'{store_item["price"]} {clancoin_emote}')
             embeds.append(emb)
-            print(type(store_item))
         return embeds
     
     def view(self, index):
         view = discord.ui.View()
-        print(index)
-        self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user="MindsetFPS#7717", label="Cash", price=self.items.data[self.index]["price"], store_item=self.items.data[self.index])
+        self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user="MindsetFPS#7717", label=f'Comprar por {clancoin_emote} {self.items.data[index]["price"]}', store_item=self.items.data[self.index])
         cancel_button = discord.ui.Button(
             label="Cancelar",
             style=discord.ButtonStyle.red,
@@ -333,9 +326,8 @@ class BuyButton(discord.ui.Button):
             disabled: bool = False,
             custom_id: str = None,
             row: int = 0,
-            user: str = "MindsetFPS#7717",
+            user: str = None,
             index: int = 0,
-            price: int =0,
             store_item: dict = None
         ):
             super().__init__(
@@ -351,15 +343,14 @@ class BuyButton(discord.ui.Button):
             self.disabled = disabled
             self.paginator = None
             self.user = user
-            self.price = price
             self.store_item = store_item
 
         async def callback(self, interaction):
-            print("price: ", self.price)
+            price = self.store_item["price"]
+            print("price: ", price)
             coins = get_user_coins(self.user)
-            print(coins.data)
             print(*self.store_item.items())
-            if coins.data[0]["coins"] < self.price:
+            if coins.data[0]["coins"] < price:
                 await interaction.response.send_message("No tienes suficientes Clan Coins.")
             else:
                 if self.store_item["code"] != None:
@@ -372,58 +363,24 @@ class BuyButton(discord.ui.Button):
                         embed.set_image(url=self.store_item["image_url"])
 
                         transaction_name = f"buy_item_{str(self.store_item['id'])}"     
-                        insert_item_buy(sent_by=user_to_string(interaction), received_by="juanito_gamer#4951", amount=self.price, transaction_type=transaction_name)
+                        insert_item_buy(sent_by=bot.user.name + '#' + bot.user.discriminator, received_by=user_to_string(interaction), amount=self.store_item['price'], transaction_type=transaction_name) 
+                        set_new_balance(user=self.user, price=self.store_item["price"])
                         await interaction.user.send(f"Tu codigo para masterclass es {self.store_item['code']}")
                         await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}.', view=None, embed=embed)
                     else:
                         await interaction.response.edit_message(content="Nos hemos quedado sin codigos, por favor vuelve a intentarlo despues.", view=None, embed=None)
                         await interaction.guild.owner.send(f'Nos hemos quedado el codigo {self.store_item["code"]} para {self.store_item["name"]}, considera añadir mas unidades o crear un nuevo objeto.')
-                        
-
-
+                else:
+                    
+                    # await interaction.response.send_message()
+                    await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}', view=None, embed=None)
+                    await interaction.followup.send(content=f"<@{interaction.user.id}> compró {self.store_item['name']}. En un momento <@{interaction.guild.owner_id}> se contactará para entregar el premio.")
 
 @bot.slash_command(name="strings")
 async def pagetest_strings(ctx: discord.ApplicationContext):
-    """Demonstrates passing a list of strings as pages."""
-
-    # paginator = pages.Paginator(pages=Store.embed(), custom_view=Store.view(), loop_pages=True )
-    # store = Store()
-    paginator = Store().paginator
+    print(user_to_string(ctx=ctx))
+    paginator = Store(user_to_string(ctx=ctx)).paginator
     await paginator.respond(ctx.interaction, ephemeral=True)
-
-@bot.slash_command(name="tienda", description="Mira los objetos en la tienda de Clan.")
-async def store(ctx):
-    items = supabase.table("item").select("*").execute()
-    assert len(items.data) > 0
-
-    embeds = []
-
-    for item in items.data:
-        print(item)
-        emb = discord.Embed(title=item["name"], )
-        emb.add_field(name="Precio", value=item["price"] )
-        embeds.append(emb)
-
-    last_emb = discord.Embed(title="Usa /buy para comprar.")
-    embeds.append(last_emb)
-
-    await ctx.respond(embeds=embeds, ephemeral=True)
-
-
-@bot.slash_command(name="comprar", description="Compra el objeto que quieras con tus Clan Coins.")
-async def buy(ctx: discord.ApplicationContext, name: str = False):
-    if name:
-        await ctx.respond(f'Comprar {name}')
-    else:
-        await ctx.respond("Mira los objetos de la tienda")
-
-
-@bot.slash_command(name = "hello", description = "Say hello to the bot")
-async def hello(ctx):
-    # print(ctx.guild.members)
-    user_id = ctx.author.id
-    user = bot.get_user(user_id) or await bot.fetch_user(user_id)
-    await user.send('whatever')
 
 class MyModal(discord.ui.Modal):
     def __init__(self, *args, **kwargs) -> None:

@@ -1,3 +1,5 @@
+from operator import eq
+from turtle import update
 from dotenv import load_dotenv
 from supabase.client import Client, create_client
 import os
@@ -15,6 +17,13 @@ def new_transaction(sent_by, received_by, amount, transaction_type):
             "sent_by": sent_by, 
             "received_by": received_by
     }).execute()
+
+def set_new_balance(user, price):
+    data = get_user_coins(user)
+    balance = data.data[0]["coins"]
+
+    print("new balance: " + str(balance - price))
+    supabase.table("discord_user").update({"coins": balance - price}).eq(column="discordUser", value=user).execute()
 
 def insert_welcome_gift_transaction(sent_by, received_by, amount):
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="welcome_gift")
