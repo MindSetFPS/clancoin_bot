@@ -44,3 +44,6 @@ def get_store_items():
 def get_user_coins(user):
     coins = supabase.table("discord_user").select("coins").eq("discordUser", user).execute()
     return coins
+
+def create_new_store_item(payload):
+    supabase.table("item").insert(payload).execute()
