@@ -17,3 +17,4 @@ grandmaster = LeagueRanks(name="grandmaster"  , display_name="Gran Maestro", mul
 challenger  = LeagueRanks(name="challenger"   , display_name="Retador",      multiplier=3.0,   reward=500.0)
 
 divisions = ["0", "i", "ii", "iii", "iv"]
+tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
