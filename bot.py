@@ -6,13 +6,11 @@ from peewee import *
 from dotenv import load_dotenv
 from discord.ui import Modal, View, InputText, Button
 from discord.commands import Option
-from discord.ext import commands, pages
-from functools import partial
-from helpers import user_time, user_is_mod, move_backwards, move_forward, user_to_string
+from discord.ext import commands
+from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import get_store_items, supabase, insert_promo_reward_transaction, insert_play_reward, get_user_coins, insert_item_buy, set_new_balance
-from discord.ext.commands import UserConverter
-from custom_views import ApproveView, Store
+from transaction import supabase, get_user_coins, set_new_balance
+from custom_views import ApproveView, Store, Create_add_item_view
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
 load_dotenv()
@@ -181,61 +179,14 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
     else:
         await ctx.send_followup(content="No tienes permiso para hacer eso.")
 
-
-
 @bot.slash_command(name="tienda", description="Mira la tienda de Clan y compra tus items favoritos.")
 async def shop(ctx: discord.ApplicationContext):
     paginator = Store(user_to_string(ctx=ctx.author)).paginator
     await paginator.respond(ctx.interaction, ephemeral=True)
 
-class Create_add_item_view(discord.ui.Modal):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-        self.add_item(discord.ui.InputText(label="Nombre"))
-        self.add_item(discord.ui.InputText(label="Precio"))
-        self.add_item(discord.ui.InputText(label="Descripcion", style=discord.InputTextStyle.long))
-        self.add_item(discord.ui.InputText(label="Image URL"))
-        self.add_item(discord.ui.InputText(label="Codigo - Cantidad", required=False))
-
-    async def callback(self, interaction: discord.Interaction):
-
-        payload = {
-            "name": self.children[0].value,
-            "price": self.children[1].value,
-            "description": self.children[2].value,
-            "image_url": self.children[3].value,
-        }
-
-        embed = discord.Embed(title="Nuevo objeto")
-
-        if len(self.children[4].value) > 0:
-            code_and_amount = self.children[4].value.split(" ")
-
-            payload["code"] = code_and_amount[0]
-            payload["amount"] = code_and_amount[1]
-
-            embed.add_field(name="Codigo", value=code_and_amount[0])
-            embed.add_field(name="Cantidad", value=code_and_amount[1])
-
-        supabase.table("item").insert(payload).execute()
-
-        embed.add_field(name="Nombre", value=self.children[0].value)
-        embed.add_field(name="Precio", value=self.children[1].value)
-        embed.add_field(name="Descripcion", value=self.children[2].value)
-        embed.set_image(url=self.children[3].value)
-
-        await interaction.response.send_message(embeds=[embed], ephemeral=True)
-
 @bot.slash_command(name = "add_new_item", description = "Add a new item to the store.")
 async def add_new_item(ctx):
-    user_roles = ctx.author.roles
-    guild_roles = ctx.guild.roles
-
-    highest_user_rol = user_roles[len(user_roles) - 1].name
-    highest_guild_rol = guild_roles[len(guild_roles) - 1].name
-    
-    if highest_guild_rol == highest_user_rol:
+    if user_is_mod(ctx=ctx):
         modal = Create_add_item_view(title="Creando un nuevo objeto para la tienda.")
         await ctx.send_modal(modal)
     else:

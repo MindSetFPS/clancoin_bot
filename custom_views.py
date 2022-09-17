@@ -5,7 +5,7 @@ from discord.ui import Button
 from discord.ext import commands, pages
 from helpers import user_is_mod, move_forward, user_to_string
 from league_of_legends import divisions, tiers
-from transaction import insert_play_reward, insert_promo_reward_transaction, get_store_items, get_user_coins, insert_item_buy, set_new_balance
+from transaction import insert_play_reward, insert_promo_reward_transaction, get_store_items, get_user_coins, insert_item_buy, set_new_balance, create_new_store_item
 
 clancoin_emote = '<:clancoin:974120483693924464>'
 
@@ -182,3 +182,42 @@ class BuyButton(discord.ui.Button):
                     set_new_balance(user=self.user, price=self.store_item["price"], operation=operator.sub)
                     await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}', view=None, embed=None)
                     await interaction.followup.send(content=f"<@{interaction.user.id}> compró {self.store_item['name']}. En un momento <@{interaction.guild.owner_id}> se contactará para entregar el premio.")
+
+class Create_add_item_view(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.add_item(discord.ui.InputText(label="Nombre"))
+        self.add_item(discord.ui.InputText(label="Precio"))
+        self.add_item(discord.ui.InputText(label="Descripcion", style=discord.InputTextStyle.long))
+        self.add_item(discord.ui.InputText(label="Image URL"))
+        self.add_item(discord.ui.InputText(label="Codigo - Cantidad", required=False))
+
+    async def callback(self, interaction: discord.Interaction):
+
+        payload = {
+            "name": self.children[0].value,
+            "price": self.children[1].value,
+            "description": self.children[2].value,
+            "image_url": self.children[3].value,
+        }
+
+        embed = discord.Embed(title="Nuevo objeto")
+
+        if len(self.children[4].value) > 0:
+            code_and_amount = self.children[4].value.split(" ")
+
+            payload["code"] = code_and_amount[0]
+            payload["amount"] = code_and_amount[1]
+
+            embed.add_field(name="Codigo", value=code_and_amount[0])
+            embed.add_field(name="Cantidad", value=code_and_amount[1])
+
+        create_new_store_item(payload=payload)
+
+        embed.add_field(name="Nombre", value=self.children[0].value)
+        embed.add_field(name="Precio", value=self.children[1].value)
+        embed.add_field(name="Descripcion", value=self.children[2].value)
+        embed.set_image(url=self.children[3].value)
+
+        await interaction.response.send_message(embeds=[embed], ephemeral=True)
