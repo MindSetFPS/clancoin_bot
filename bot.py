@@ -115,13 +115,7 @@ async def check_clancoins(ctx):
 
 @bot.slash_command(name="dar_monedas_a_usuario", description="Da ClanCoins a un usario.")
 async def give_clancoins(ctx, member: discord.Member, amount: int):
-    user_roles = ctx.author.roles
-    guild_roles = ctx.guild.roles
-
-    highest_user_rol = user_roles[len(user_roles) - 1].name
-    highest_guild_rol = guild_roles[len(guild_roles) - 1].name
-    
-    if highest_guild_rol == highest_user_rol:
+    if user_is_mod(ctx=ctx):
         discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
         discord_member_full_username = member.name + '#' + member.discriminator
         transaction = supabase.table("transaction").insert({"transaction_type": "gift", "amount" : amount, "sent_by": discord_full_user, "received_by": discord_member_full_username}).execute()
@@ -138,16 +132,9 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
     # La lista de usuarios no puede ser mayor a 2000 caracteres 
     new_list = users_list.replace('\t', '') #si copias de excel la lista de usuarios, te añade un tab, esta linea lo elimina
     new_list = new_list.split(",") #usa la coma para separar cada usuario
-    
-    user_roles = ctx.author.roles
-    guild_roles = ctx.guild.roles
-
-    highest_user_rol = user_roles[len(user_roles) - 1].name
-    highest_guild_rol = guild_roles[len(guild_roles) - 1].name
 
     received = []
-    
-    if highest_guild_rol == highest_user_rol:
+    if user_is_mod(ctx=ctx):
         for user in new_list:
             user_clean = user.lstrip()
             discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
