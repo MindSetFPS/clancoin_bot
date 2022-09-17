@@ -2,7 +2,6 @@ import sys
 import os
 import operator
 import discord
-from peewee import *
 from dotenv import load_dotenv
 from discord.ui import Modal, View, InputText, Button
 from discord.commands import Option
