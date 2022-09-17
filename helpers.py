@@ -1,3 +1,5 @@
+import discord
+
 def user_is_mod(ctx):
     user_roles = ctx.user.roles
     guild_roles = ctx.guild.roles
@@ -7,8 +9,8 @@ def user_is_mod(ctx):
 
     return highest_guild_rol == highest_user_rol
 
-def user_to_string(ctx):
-    return ctx.user.name + '#' + ctx.user.discriminator 
+def user_to_string(ctx: discord.User):
+    return ctx.name + '#' + ctx.discriminator 
 
 def user_time(seconds):
     def return_plural(seconds, unidad):
