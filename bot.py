@@ -3,7 +3,6 @@ import os
 import operator
 import discord
 from dotenv import load_dotenv
-from discord.ui import Modal, View, InputText, Button
 from discord.commands import Option
 from discord.ext import commands
 from helpers import user_is_mod, user_time, user_to_string
