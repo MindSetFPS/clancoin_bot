@@ -1,3 +1,5 @@
 .env
+.env.development
+.env.production
 test.db
 /__pycache__
