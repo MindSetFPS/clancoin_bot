@@ -1,10 +1,14 @@
 from operator import eq
-from turtle import update
 from dotenv import load_dotenv
 from supabase.client import Client, create_client
 import os
+import sys
 
-load_dotenv()
+if sys.argv[1] == "dev":
+    load_dotenv('.env.development')
+elif sys.argv[1] == "prod":
+    load_dotenv('.env.production')
+
 url = os.getenv("url")
 key = os.getenv("public")
 

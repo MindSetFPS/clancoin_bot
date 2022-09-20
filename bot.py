@@ -11,14 +11,14 @@ from transaction import supabase, get_user_coins, set_new_balance
 from custom_views import ApproveView, Store, Create_add_item_view
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
-load_dotenv()
 bot = discord.Bot(intents=discord.Intents.all())
 
 if sys.argv[1] == "dev":
-    DISCORD_TOKEN = os.getenv('DEVELOPMENT_DISCORD_TOKEN')
+    load_dotenv('.env.development')
 elif sys.argv[1] == "prod":
-    DISCORD_TOKEN = os.getenv('CLAN_ACADEMY_DISCORD_TOKEN')
+    load_dotenv('.env.production')
 
+DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 clancoin_emote = '<:clancoin:974120483693924464>'
 clancoin_emote_id = 974120483693924464
 pepega = '<:pepega:776918257785241630>'
