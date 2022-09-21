@@ -7,7 +7,7 @@ from discord.commands import Option
 from discord.ext import commands
 from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import supabase, get_user_coins, set_new_balance
+from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction
 from custom_views import ApproveView, Store, Create_add_item_view
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
@@ -31,14 +31,7 @@ async def on_ready():
 async def on_member_join(member):
     bot_full_user = bot.user.name + '#' + bot.user.discriminator
     discord_full_user = member.name + '#' + member.discriminator
-    print(member.name)
-    transaction = supabase.table("transaction").insert({
-            "transaction_type": "welcome_gift", 
-            "amount" : 500, 
-            "sent_by": bot_full_user, 
-            "received_by": discord_full_user
-        }).execute()
-    insertion = supabase.table("discord_user").insert({"discordUser":discord_full_user, "coins": 500}).execute()
+    insert_welcome_gift_transaction(amount=500, sent_by=bot_full_user, received_by=discord_full_user)
     channel = discord.utils.get(member.guild.channels, name="👋・bienvenidas")
     await channel.send(f"<@{member.id}> recibiste 500 {clancoin_emote} Clan Coins.")
 

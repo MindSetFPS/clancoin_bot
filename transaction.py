@@ -1,4 +1,5 @@
-from operator import eq
+from ast import operator
+from operator import eq, add
 from dotenv import load_dotenv
 from supabase.client import Client, create_client
 import os
@@ -14,21 +15,29 @@ key = os.getenv("public")
 
 supabase: Client = create_client(url, key)
 
-def new_transaction(sent_by, received_by, amount, transaction_type):
-    supabase.table("transaction").insert({
-            "transaction_type": transaction_type, 
-            "amount" : amount, 
-            "sent_by": sent_by, 
-            "received_by": received_by
-    }).execute()
+def find_or_create_user(user):
+    data = supabase.table("discord_user").select("*").eq("discordUser", user).execute()
+    user_exists = len(data.data) > 0
 
+    if user_exists:
+        return
+    else:
+        supabase.table("discord_user").insert({"discordUser": user}).execute()
+        
 def set_new_balance(user, price, operation):
     data = get_user_coins(user)
     balance = data.data[0]["coins"]
 
+    print("old balance", balance)
+    print("price ", price)
     new_balance = operation(balance, price)
-    print(new_balance)
-    supabase.table("discord_user").update({"coins": new_balance}).eq(column="discordUser", value=user).execute()
+    print("new balance: ", new_balance)
+    supabase.table("discord_user").update({"coins": int(new_balance)}).eq(column="discordUser", value=user).execute()
+
+def new_transaction(sent_by, received_by, amount, transaction_type):
+    find_or_create_user(user=received_by)
+    supabase.table("transaction").insert({"transaction_type": transaction_type, "amount" : amount, "sent_by": sent_by, "received_by": received_by}).execute()
+    set_new_balance(user=received_by, price=amount, operation=add)
 
 def insert_welcome_gift_transaction(sent_by, received_by, amount):
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="welcome_gift")
@@ -46,6 +55,7 @@ def get_store_items():
     return supabase.table("item").select("*").execute()
 
 def get_user_coins(user):
+    find_or_create_user(user=user)
     coins = supabase.table("discord_user").select("coins").eq("discordUser", user).execute()
     return coins
 
