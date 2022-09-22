@@ -56,7 +56,8 @@ async def recompensa_division(
     await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
     await ctx.respond(f'{ctx.guild.owner_id}', view=ApproveView(ctx=ctx, tier=tier, division=division, command="recompensa_promo"))
 
-@bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada.")
+@bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada. Enfriamiento: 24 horas.")
+@commands.cooldown(1, 60 * 60 * 24, commands.BucketType.user)
 async def recompensa_jugada(
     ctx: discord.ApplicationContext, 
     jugada: Option(str, "Jugada", choices=["TripleKill", "QuadraKill", "PentaKill"]),
