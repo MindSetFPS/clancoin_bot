@@ -11,7 +11,9 @@ clancoin_emote = '<:clancoin:974120483693924464>'
 
 class ApproveView(discord.ui.View):
     def __init__(self, ctx, command, division=None, tier=None, play=None):
-        super().__init__()
+        super().__init__(
+            timeout=None
+        )
 
         self.author = ctx.author
         self.command = command
