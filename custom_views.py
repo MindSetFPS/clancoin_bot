@@ -88,7 +88,9 @@ class Store():
                 BuyButton(
                     index=move_forward(self.items.data, self.paginator.current_page), 
                     user=self.user, 
-                    label=f'Comprar por {clancoin_emote} {self.items.data[move_forward(self.items.data, self.paginator.current_page)]["price"]}',
+                    label=f'Comprar por {self.items.data[move_forward(self.items.data, self.paginator.current_page)]["price"]} Clan Coins.',
+                    emoji=clancoin_emote,
+                    row=1,
                     store_item=self.items.data[move_forward(self.items.data, self.paginator.current_page)])
             )
             self.interaction_buttons.add_item(discord.ui.Button(label="Cancelar",style=discord.ButtonStyle.red,emoji="✖️",row=1))
@@ -113,7 +115,7 @@ class Store():
     
     def view(self, index):
         view = discord.ui.View()
-        self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user=self.user, label=f'Comprar por {clancoin_emote} {self.items.data[index]["price"]}', store_item=self.items.data[self.index])
+        self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user=self.user, emoji=clancoin_emote , label=f'Comprar por {self.items.data[index]["price"]} Clan Coins.', store_item=self.items.data[self.index], row=1)
         cancel_button = discord.ui.Button(
             label="Cancelar",
             style=discord.ButtonStyle.red,
