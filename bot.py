@@ -171,4 +171,11 @@ async def add_new_item(ctx):
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
 
+@bot.slash_command(name="nueva_apuesta", description="Crear nueva apuesta.")
+async def create_new_bet(ctx):
+    if user_is_mod(ctx=ctx):
+        print("User is mod, continue")
+    else:
+        await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
+
 bot.run(DISCORD_TOKEN)
