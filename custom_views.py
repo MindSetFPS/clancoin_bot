@@ -93,7 +93,7 @@ class Store():
                     row=1,
                     store_item=self.items.data[move_forward(self.items.data, self.paginator.current_page)])
             )
-            self.interaction_buttons.add_item(discord.ui.Button(label="Cancelar",style=discord.ButtonStyle.red,emoji="✖️",row=1))
+            self.interaction_buttons.add_item(CancelButton())
             await self.paginator.goto_page(move_forward(self.items.data, self.paginator.current_page), interaction=interaction)
         self.next.callback = next_item
 
@@ -116,12 +116,7 @@ class Store():
     def view(self, index):
         view = discord.ui.View()
         self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user=self.user, emoji=clancoin_emote , label=f'Comprar por {self.items.data[index]["price"]} Clan Coins.', store_item=self.items.data[self.index], row=1)
-        cancel_button = discord.ui.Button(
-            label="Cancelar",
-            style=discord.ButtonStyle.red,
-            emoji="✖️",
-            row=1
-        )
+        cancel_button = CancelButton()
         view.add_item(self.buy_button)
         view.add_item(cancel_button)
         return view
@@ -184,6 +179,22 @@ class BuyButton(discord.ui.Button):
                     set_new_balance(user=self.user, price=self.store_item["price"], operation=operator.sub)
                     await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}', view=None, embed=None)
                     await interaction.followup.send(content=f"<@{interaction.user.id}> compró {self.store_item['name']}. En un momento <@{interaction.guild.owner_id}> se contactará para entregar el premio.")
+
+class CancelButton(discord.ui.Button):
+        def __init__(
+            self,
+        ):
+            super().__init__(
+                emoji="✖️",
+                style=discord.ButtonStyle.red,
+                disabled=False,
+                custom_id=None,
+                row=1,
+                label="Cancelar"
+            )
+
+        async def callback(self, interaction):
+            await interaction.response.edit_message(content="Hasta luego 👋.", view=None, embed=None)
 
 class Create_add_item_view(discord.ui.Modal):
     def __init__(self, *args, **kwargs) -> None:
