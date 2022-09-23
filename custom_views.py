@@ -9,6 +9,69 @@ from transaction import insert_play_reward, insert_promo_reward_transaction, get
 
 clancoin_emote = '<:clancoin:974120483693924464>'
 
+class BetView(discord.ui.View):
+    def __init__(self, ctx=discord.ApplicationContext, teamOption1=str, teamOption2=str):
+        super().__init__(
+            timeout=43200
+        )
+
+        self.teamOption1 = teamOption1
+        self.display_name1 = teamOption1.replace("_", " ")
+        self.display_name1 = self.display_name1.title()
+        self.emoji1 = None
+
+        self.teamOption2 = teamOption2
+        self.display_name2 = teamOption2.replace("_", " ")
+        self.display_name2 = self.display_name2.title()
+        self.emoji2 = None
+        
+        self.ctx = ctx
+        #find first emoji
+        for emoji in self.ctx.guild.emojis:
+            if emoji.name == self.teamOption1:
+                self.emoji1 = emoji
+                break   
+
+        for emoji in self.ctx.guild.emojis:
+            if emoji.name == self.teamOption2:
+                self.emoji2 = emoji
+                break
+
+        team1_Button = BetOptionButton(label=self.display_name1, style=discord.ButtonStyle.blurple, emoji=self.emoji1)
+        team2_Button = BetOptionButton(label=self.display_name2, style=discord.ButtonStyle.gray, emoji=self.emoji2 )
+
+        self.add_item(team1_Button)
+        self.add_item(team2_Button)
+
+class BetOptionButton(discord.ui.Button):
+        def __init__(
+            self,
+            label: str = None,
+            emoji: Union[str, discord.Emoji, discord.PartialEmoji] = None,
+            style: discord.ButtonStyle = discord.ButtonStyle.green,
+            disabled: bool = False,
+            custom_id: str = None,
+            row: int = 0,
+        ):
+            super().__init__(
+                emoji=emoji,
+                style=style,
+                disabled=disabled,
+                custom_id=custom_id,
+                row=row,
+                label=label
+            )
+            self.emoji: Union[str, discord.Emoji, discord.PartialEmoji] = emoji
+            self.style = style
+            self.disabled = disabled
+            self.label = label
+
+        async def callback(self, interaction: discord.Interaction ):
+            if user_is_mod(interaction):
+                await interaction.response.edit_message(content="Ha ganado X.", view=None)
+            else:
+                await interaction.response.send_message(content="Votaste por X", ephemeral=True)
+
 class ApproveView(discord.ui.View):
     def __init__(self, ctx, command, division=None, tier=None, play=None):
         super().__init__(

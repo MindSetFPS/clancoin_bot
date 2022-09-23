@@ -8,7 +8,7 @@ from discord.ext import commands
 from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
 from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction
-from custom_views import ApproveView, Store, Create_add_item_view
+from custom_views import ApproveView, Store, Create_add_item_view, BetView
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
 bot = discord.Bot(intents=discord.Intents.all())
@@ -40,6 +40,7 @@ async def on_application_command_error(ctx, error):
     if isinstance(error, commands.CommandOnCooldown):
         await ctx.respond(content=f'Vuelve a intentar en {user_time(error.retry_after)}', ephemeral=True)
     else:
+        await ctx.respond(content=error)
         raise error
 
 @bot.slash_command(name="recompensa_promo", description="Reclama tu recompensa por ganar tu promo.")
@@ -172,9 +173,27 @@ async def add_new_item(ctx):
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
 
 @bot.slash_command(name="nueva_apuesta", description="Crear nueva apuesta.")
-async def create_new_bet(ctx):
+async def create_new_bet(
+    ctx: discord.ApplicationContext, 
+    name: Option(str, "Pregunta de la prediccion."), 
+    team_option1: Option(str, "Equipo 1", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs']), 
+    team_option2: Option(str, "Equipo 2", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs']),
+    channel: Option(discord.TextChannel, "Canal donde se publicara esta prediccion."),
+    premio: Option(int, "Cuantas Clan Coins recibiran los ganadores de la prediccion.") = 75,
+    costo: Option(int, "Costo por entrar a la prediccion.") = 25,
+):
     if user_is_mod(ctx=ctx):
         print("User is mod, continue")
+
+        embed = discord.Embed(title=name)
+        embed.add_field(name="Entrada: ", value=f"{clancoin_emote} {costo}")
+        embed.add_field(name="Premio: ", value=f"{clancoin_emote} {premio}")
+
+        # for emoji in ctx.guild.emojis:
+        #     print(emoji.name)
+
+        await channel.send(view=BetView(ctx=ctx, teamOption1=team_option1, teamOption2=team_option2), embed=embed)
+        await ctx.respond(content=f'Creada encuesta "{name}" en el canal {channel.mention}')
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
 
