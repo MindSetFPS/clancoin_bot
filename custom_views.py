@@ -272,8 +272,7 @@ class BuyButton(discord.ui.Button):
                         embed.set_image(url=self.store_item["image_url"])
 
                         transaction_name = f"buy_item_{str(self.store_item['id'])}"
-                        insert_item_buy(sent_by=user_to_string(interaction.guild.owner), received_by=user_to_string(interaction), amount=self.store_item['price'], transaction_type=transaction_name) 
-                        set_new_balance(user=self.user, price=self.store_item["price"], operation=operator.sub)
+                        insert_item_buy(sent_by=user_to_string(interaction.guild.owner), received_by=user_to_string(interaction), amount=-self.store_item['price'], transaction_type=transaction_name) 
                         await interaction.user.send(f"Tu codigo para masterclass es {self.store_item['code']}")
                         await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}.', view=None, embed=embed)
                     else:
@@ -283,8 +282,7 @@ class BuyButton(discord.ui.Button):
                     
                     # await interaction.response.send_message()
                     transaction_name = f"buy_item_{str(self.store_item['id'])}"
-                    insert_item_buy(sent_by=user_to_string(interaction.guild.owner), received_by=self.user, amount=self.store_item['price'], transaction_type=transaction_name)
-                    set_new_balance(user=self.user, price=self.store_item["price"], operation=operator.sub)
+                    insert_item_buy(sent_by=user_to_string(interaction.guild.owner), received_by=self.user, amount=-self.store_item['price'], transaction_type=transaction_name)
                     await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}', view=None, embed=None)
                     await interaction.followup.send(content=f"<@{interaction.user.id}> compró {self.store_item['name']}. En un momento <@{interaction.guild.owner_id}> se contactará para entregar el premio.")
 
