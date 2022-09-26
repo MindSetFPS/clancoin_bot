@@ -171,7 +171,7 @@ async def add_new_item(ctx):
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
 
-@bot.slash_command(name="nueva_prediccion", description="Crear nueva apuesta.")
+@bot.slash_command(name="nueva_prediccion", description="Crear nueva predicción.")
 async def create_new_bet(
     ctx: discord.ApplicationContext, 
     question: Option(str, "Pregunta de la prediccion."), 
