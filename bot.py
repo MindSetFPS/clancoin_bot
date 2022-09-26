@@ -7,7 +7,7 @@ from discord.commands import Option
 from discord.ext import commands
 from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction
+from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction, create_new_prediction
 from custom_views import ApproveView, Store, Create_add_item_view, BetView
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
@@ -38,9 +38,8 @@ async def on_member_join(member):
 @bot.event
 async def on_application_command_error(ctx, error):
     if isinstance(error, commands.CommandOnCooldown):
-        await ctx.respond(content=f'Vuelve a intentar en {user_time(error.retry_after)}', ephemeral=True)
-    else:
-        await ctx.respond(content=error)
+        await ctx.respond(content=f'Vuelve a intentar en {user_time(error.retry_after)}', ephemeral=True) 
+    else: 
         raise error
 
 @bot.slash_command(name="recompensa_promo", description="Reclama tu recompensa por ganar tu promo.")
@@ -172,28 +171,30 @@ async def add_new_item(ctx):
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
 
-@bot.slash_command(name="nueva_apuesta", description="Crear nueva apuesta.")
+@bot.slash_command(name="nueva_prediccion", description="Crear nueva apuesta.")
 async def create_new_bet(
     ctx: discord.ApplicationContext, 
-    name: Option(str, "Pregunta de la prediccion."), 
-    team_option1: Option(str, "Equipo 1", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs']), 
-    team_option2: Option(str, "Equipo 2", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs']),
+    question: Option(str, "Pregunta de la prediccion."), 
+    team_option0: Option(str, "Equipo 1", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs']), 
+    team_option1: Option(str, "Equipo 2", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs']),
     channel: Option(discord.TextChannel, "Canal donde se publicara esta prediccion."),
-    premio: Option(int, "Cuantas Clan Coins recibiran los ganadores de la prediccion.") = 75,
+    prize: Option(int, "Cuantas Clan Coins recibiran los ganadores de la prediccion.") = 75,
     costo: Option(int, "Costo por entrar a la prediccion.") = 25,
 ):
+
     if user_is_mod(ctx=ctx):
-        print("User is mod, continue")
+        # print("User is mod, continue")
+        prediction = create_new_prediction(option0=team_option0, option1=team_option1, prize=prize, text=question)
+        print(prediction[0]["id"])
 
-        embed = discord.Embed(title=name)
+        embed = discord.Embed(title=question)
         embed.add_field(name="Entrada: ", value=f"{clancoin_emote} {costo}")
-        embed.add_field(name="Premio: ", value=f"{clancoin_emote} {premio}")
+        embed.add_field(name="Premio: ", value=f"{clancoin_emote} {prize}")
 
-        # for emoji in ctx.guild.emojis:
-        #     print(emoji.name)
+        betView = BetView(ctx=ctx, teamOption0=team_option0, teamOption1=team_option1, question=question, id=prediction[0]["id"], prize=prize, entry_cost=costo)
 
-        await channel.send(view=BetView(ctx=ctx, teamOption1=team_option1, teamOption2=team_option2), embed=embed)
-        await ctx.respond(content=f'Creada encuesta "{name}" en el canal {channel.mention}')
+        await channel.send(content=None, view=betView, embed=embed)
+        await ctx.respond(content=f'Creada encuesta "{question}" en el canal {channel.mention}')
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
 
