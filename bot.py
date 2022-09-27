@@ -20,8 +20,6 @@ elif sys.argv[1] == "prod":
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 clancoin_emote = '<:clancoin:974120483693924464>'
-clancoin_emote_id = 974120483693924464
-pepega = '<:pepega:776918257785241630>'
 
 @bot.event
 async def on_ready():
@@ -52,9 +50,8 @@ async def recompensa_division(
 ):
     print('/recompensa_promo')
     img_to_file = await img.to_file()
-    # await ctx.respond(f"Felicidades <@{ctx.author.id}> por llegar a {name} {division}.", file=await img.to_file())
     await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
-    await ctx.respond(f'{ctx.guild.owner_id}', view=ApproveView(ctx=ctx, tier=tier, division=division, command="recompensa_promo"))
+    await ctx.respond(f'{ctx.guild.owner.mention}', view=ApproveView(ctx=ctx, tier=tier, division=division, command="recompensa_promo"))
 
 @bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada. Enfriamiento: 24 horas.")
 @commands.cooldown(1, 60 * 60 * 24, commands.BucketType.user)
@@ -74,12 +71,11 @@ async def recompensa_jugada(
     else:
         await ctx.respond(f' {jugada} {submission}')
 
-    await ctx.respond("", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
+    await ctx.respond(f"{ctx.guild.owner.mention}", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
 
 @bot.slash_command(name="monedas_diarias", description ="Obtén tus monedas diarias.")
 @commands.cooldown(1, 60 * 60 * 24, commands.BucketType.user)
 async def get_coins(ctx):
-    username = ctx.author.name
     discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
     bot_full_user = bot.user.name + '#' + bot.user.discriminator
 
@@ -127,7 +123,6 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
         for user in new_list:
             user_clean = user.lstrip()
             discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
-
             transaction = insert_gift_transaction(sent_by=discord_full_user, received_by=user_clean, amount=amount)
                 
             received.append(user)
