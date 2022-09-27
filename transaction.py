@@ -42,6 +42,9 @@ def new_transaction(sent_by, received_by, amount, transaction_type):
 def insert_welcome_gift_transaction(sent_by, received_by, amount):
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="welcome_gift")
 
+def user_got_welcome_gift(received_by):
+    return supabase.table("transaction").select("*").match({"transaction_type": "welcome_gift", "received_by": received_by}).execute()
+
 def insert_promo_reward_transaction(sent_by, received_by, amount, transaction_type):
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
 
@@ -92,3 +95,7 @@ def create_prediction_entry_transaction(sent_by, received_by, amount, transactio
 
 def insert_daily_transaction(sent_by, received_by, amount):
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="daily_reward")
+
+def insert_gift_transaction(sent_by, received_by, amount):
+    #do not get cofused with insert_gift_transaction, which gives the user a welcome goodie
+    new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="gift")

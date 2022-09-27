@@ -7,7 +7,7 @@ from discord.commands import Option
 from discord.ext import commands
 from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction
+from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction, insert_gift_transaction, user_got_welcome_gift
 from custom_views import ApproveView, Store, Create_add_item_view, BetView
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
@@ -107,9 +107,9 @@ async def give_clancoins(ctx, member: discord.Member, amount: int):
     if user_is_mod(ctx=ctx):
         discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
         discord_member_full_username = member.name + '#' + member.discriminator
-        transaction = supabase.table("transaction").insert({"transaction_type": "gift", "amount" : amount, "sent_by": discord_full_user, "received_by": discord_member_full_username}).execute()
-        assert len(transaction.data) > 0
-        await ctx.respond(f'Le diste {amount} {clancoin_emote} a {discord_member_full_username}.')
+        transaction = insert_gift_transaction(sent_by=discord_full_user, received_by=discord_member_full_username, amount=amount)
+        
+        await ctx.respond(f'Le diste {amount} {clancoin_emote} a {member.mention}.')
     else:
         await ctx.respond("No tienes permiso para hacer eso.")
 
@@ -127,28 +127,10 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
         for user in new_list:
             user_clean = user.lstrip()
             discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
-            transaction_exists = supabase.table("transaction").select('*').eq('transaction_type', 'welcome_gift').eq('received_by', user_clean).execute()
 
-            if len(transaction_exists.data) > 0:
-                print(user_clean + ' already got welcome gift')
-            else:
-                transaction = supabase.table("transaction").insert({
-                        "transaction_type": "welcome_gift", 
-                        "amount" : amount, 
-                        "sent_by": discord_full_user, 
-                        "received_by": user_clean
-                    }).execute()
-
-                assert len(transaction.data) > 0
-
-                user_row = supabase.table("discord_user").select("*").eq("discordUser", user_clean).execute()
-                assert len(transaction.data) > 0
-
-                if len(user_row.data) > 0:
-                    new_coin_amount = user_row.data[0]["coins"] + amount
-                    supabase.table("discord_user").update({"coins": new_coin_amount}).eq("discordUser", user_clean).execute()
+            transaction = insert_gift_transaction(sent_by=discord_full_user, received_by=user_clean, amount=amount)
                 
-                received.append(user)
+            received.append(user)
 
         received = ', '.join(received)
         await ctx.send_followup(content=f'Le diste {amount} {clancoin_emote} a {received}.')
