@@ -93,15 +93,14 @@ async def get_coins(ctx):
 async def check_clancoins(ctx):
     print("/mis_clancoins")
     discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
-    coins = supabase.table("discord_user").select("coins").match({"discordUser":discord_full_user}).execute()
-
-    # transactions = supabase.table("transaction").select('*').eq('transaction_type', 'welcome_gift').eq('received_by', user).execute()
+    
+    coins = get_user_coins(user=discord_full_user)
 
     if len(coins.data) > 0:
         current_coins = coins.data[0]["coins"]
-        await ctx.respond(f"Tienes {current_coins} <:clancoin:974120483693924464> ", ephemeral=True)
+        await ctx.respond(f"Tienes {current_coins} {clancoin_emote}", ephemeral=True)
     else:
-        await ctx.respond(f"Tienes {0} <:clancoin:974120483693924464> ", ephemeral=True)
+        await ctx.respond(f"Tienes {0} {clancoin_emote}", ephemeral=True)
 
 @bot.slash_command(name="dar_monedas_a_usuario", description="Da ClanCoins a un usario.")
 async def give_clancoins(ctx, member: discord.Member, amount: int):
