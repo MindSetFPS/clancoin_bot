@@ -89,3 +89,6 @@ def set_prediction_transaction(transaction_type, amount, sent_by, received_by):
 
 def create_prediction_entry_transaction(sent_by, received_by, amount, transaction_type):
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
+
+def insert_daily_transaction(sent_by, received_by, amount):
+    new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="daily_reward")

@@ -7,7 +7,7 @@ from discord.commands import Option
 from discord.ext import commands
 from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction, create_new_prediction
+from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction
 from custom_views import ApproveView, Store, Create_add_item_view, BetView
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
@@ -86,10 +86,8 @@ async def get_coins(ctx):
     #get current coins number
     coins = get_user_coins(user=user_to_string(ctx.author))
     current_coins = coins.data[0]["coins"]
-    update = set_new_balance(user=user_to_string(ctx.author), price=10, operation=operator.add)
-    transaction = supabase.table("transaction").insert({"transaction_type": "daily_reward", "amount": 10, "sent_by": bot_full_user, "received_by": discord_full_user}).execute()
-    
-    await ctx.respond(f"Ya recibiste tus monedas diarias, tienes {current_coins + 10} <:omegalul:776917394428919808>", ephemeral=True)
+    transaction = insert_daily_transaction(sent_by=bot_full_user, received_by=discord_full_user, amount=10 )
+    await ctx.respond(f"Recibiste tus monedas diarias, ahora tienes {current_coins + 10} {clancoin_emote}", ephemeral=True)
 
 @bot.slash_command(name="mis_clancoins", description="Mira cuantas Clan Coins tienes.")
 async def check_clancoins(ctx):
