@@ -7,7 +7,7 @@ from discord.commands import Option
 from discord.ext import commands
 from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import supabase, get_user_coins, set_new_balance, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction, insert_gift_transaction, user_got_welcome_gift
+from transaction import get_user_coins, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction, insert_gift_transaction, user_got_welcome_gift
 from custom_views import ApproveView, Store, Create_add_item_view, BetView
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
