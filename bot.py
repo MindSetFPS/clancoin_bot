@@ -1,14 +1,17 @@
 import sys
 import os
-import operator
+import io
 import discord
 from dotenv import load_dotenv
 from discord.commands import Option
-from discord.ext import commands
+from discord.ext import commands, pages
 from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import get_user_coins, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction, insert_gift_transaction, user_got_welcome_gift
+from transaction import get_user_coins, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction, insert_gift_transaction, user_got_welcome_gift, insert_portrait_transaction
 from custom_views import ApproveView, Store, Create_add_item_view, BetView
+from PIL import Image, ImageFont, ImageDraw
+from urllib.request import urlopen
+from portadas import portadas
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
 bot = discord.Bot(intents=discord.Intents.all())
@@ -171,5 +174,76 @@ async def create_new_bet(
         await ctx.respond(content=f'Creada encuesta "{question}" en el canal {channel.mention}')
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
+
+@bot.slash_command(name="portada", description="Consigue una portada de Equipo de Worlds por 200 ClanCoins.")
+async def portada(
+    ctx: discord.ApplicationContext, 
+    red: Option(str, '¿Para que red social quiere la portada?', choices=['Facebook', 'Twitter']), 
+    equipo: Option(str, 'El equipo del que quieres la portada.', choices=['Isurus', 'Fnatic']),
+    nombre: Option(str=None, description="Nombre (Opcional, si no escribes ninguno, usa tu nombre de Discord)")
+):
+    coins = get_user_coins(user=user_to_string(ctx=ctx.user))
+
+    if len(coins.data) > 0:
+        if coins.data[0]["coins"] > 200:
+            current_coins = coins.data[0]["coins"]
+            await ctx.defer()
+
+            portada_template = portadas.return_team(team=equipo)
+            portada_template_url = portada_template.return_social_media_link(sm=red)
+
+            image = Image.open(urlopen(portada_template_url))
+
+            draw = ImageDraw.Draw(image)
+            font = ImageFont.truetype('./SEQUEL/SEQUEL/Sequel100Black-76.ttf', portada_template.size[red])
+            text = ctx.author.name
+            draw.text(
+                text=nombre if nombre else text, 
+                xy=(portada_template.x[red], portada_template.y[red]), 
+                font=font, 
+                fill=portada_template.color, 
+                anchor='rm'
+            )
+
+            porta = io.BytesIO()    
+            image.save(porta, format='png')
+            porta.seek(0)
+
+            await ctx.send_followup(content="Aqui tienes tu portada personalizada.", file=discord.File(fp=porta, filename='portada.png'))
+            insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-200)
+        else:
+            await ctx.respond(f"No tienes suficientes Clan Coins {clancoin_emote}", ephemeral=True)
+    else:
+        await ctx.respond(f"Tienes {0} {clancoin_emote}", ephemeral=True)
+
+@bot.slash_command(name="marco", description="Obten una foto de perfil para apoyar a tu equipo favorito durante #Worlds2022.")
+async def profile_picture(ctx: discord.ApplicationContext):
+
+    coins = get_user_coins(user=user_to_string(ctx=ctx.user))
+    if len(coins.data) > 0:
+        if coins.data[0]["coins"] > 150:
+            current_coins = coins.data[0]["coins"]
+            await ctx.defer()
+
+            url2 = 'https://www.youthlead.org/sites/default/files/inline-images/Reaching16%20FB%20Frame%20%282%29.png'
+            fpbuffer = io.BytesIO(await ctx.author.display_avatar.read())
+
+            photo = Image.open(fpbuffer)
+            marco =  Image.open(urlopen(url2))
+
+            marco_resized = marco.resize((photo.height, photo.width), Image.Resampling.LANCZOS)
+
+            photo.paste(marco_resized, (0, 0), marco_resized)
+            buffer = io.BytesIO()
+            photo.save(buffer, format='png')
+            buffer.seek(0)
+
+            await ctx.send_followup(content=f"Aqui tienes tu foto de perfil personalizada.", file=discord.File(fp=buffer, filename='foto.png'))
+
+            insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-200)
+        else:
+            await ctx.respond(f"No tienes suficientes Clan Coins {clancoin_emote}", ephemeral=True)
+    else:
+        await ctx.respond(f"Tienes {0} {clancoin_emote}", ephemeral=True)
 
 bot.run(DISCORD_TOKEN)

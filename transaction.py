@@ -99,3 +99,11 @@ def insert_daily_transaction(sent_by, received_by, amount):
 def insert_gift_transaction(sent_by, received_by, amount):
     #do not get cofused with insert_gift_transaction, which gives the user a welcome goodie
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="gift")
+
+def insert_portrait_transaction(sent_by, received_by, amount):
+    #do not get cofused with insert_gift_transaction, which gives the user a welcome goodie
+    new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="portrait_buy")
+
+def insert_frame_transaction(sent_by, received_by, amount):
+    #do not get cofused with insert_gift_transaction, which gives the user a welcome goodie
+    new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="frame_buy")
