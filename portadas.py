@@ -41,8 +41,8 @@ class Portadas():
         )
 
         self.isurus = Team(
-            facebook='https://static.wixstatic.com/media/3c06e6_2ca342f6152742e4aa3aca3050eb819b~mv2.png', 
-            twitter='https://static.wixstatic.com/media/3c06e6_c56e7b056c914c9ca1b264734fff529e~mv2.png',
+            facebook='https://static.wixstatic.com/media/3c06e6_608acbe2ed8e42428c3344646d346f89~mv2.png', 
+            twitter='https://static.wixstatic.com/media/3c06e6_525720d4f5c84eaea6e397e2a82d93ac~mv2.png',
             name='Isurus',
             x={'Facebook': 550, 'Twitter': 1153},
             y={'Facebook': 185, 'Twitter': 250},
@@ -55,7 +55,7 @@ class Portadas():
     # t1 = team(facebook=, twitter=)
     # c9 = team(facebook=, twitter=)
     # loud = team(facebook=, twitter=)
-    
+
     def return_team(self, team):        
         match team:
             case self.fnatic.name:
