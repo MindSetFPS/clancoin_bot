@@ -180,7 +180,7 @@ async def portada(
     ctx: discord.ApplicationContext, 
     red: Option(str, '¿Para que red social quiere la portada?', choices=['Facebook', 'Twitter']), 
     equipo: Option(str, 'El equipo del que quieres la portada.', choices=['Isurus', 'Fnatic']),
-    nombre: Option(str=None, description="Nombre (Opcional, si no escribes ninguno, usa tu nombre de Discord)")
+    nombre: Option(str=None, description="Nombre (Opcional, si no escribes ninguno, usa tu nombre de Discord)", required=False)
 ):
     coins = get_user_coins(user=user_to_string(ctx=ctx.user))
 
@@ -216,7 +216,7 @@ async def portada(
     else:
         await ctx.respond(f"Tienes {0} {clancoin_emote}", ephemeral=True)
 
-@bot.slash_command(name="marco", description="Obten una foto de perfil para apoyar a tu equipo favorito durante #Worlds2022.")
+@bot.slash_command(name="marco_isurus", description="Obten una foto de perfil para apoyar a tu equipo favorito durante #Worlds2022.")
 async def profile_picture(ctx: discord.ApplicationContext):
 
     coins = get_user_coins(user=user_to_string(ctx=ctx.user))
@@ -225,7 +225,7 @@ async def profile_picture(ctx: discord.ApplicationContext):
             current_coins = coins.data[0]["coins"]
             await ctx.defer()
 
-            url2 = 'https://www.youthlead.org/sites/default/files/inline-images/Reaching16%20FB%20Frame%20%282%29.png'
+            url2 = 'https://static.wixstatic.com/media/3c06e6_e686e67c17d94ebb874be3f7d0469e99~mv2.png'
             fpbuffer = io.BytesIO(await ctx.author.display_avatar.read())
 
             photo = Image.open(fpbuffer)
@@ -238,7 +238,7 @@ async def profile_picture(ctx: discord.ApplicationContext):
             photo.save(buffer, format='png')
             buffer.seek(0)
 
-            await ctx.send_followup(content=f"Aqui tienes tu foto de perfil personalizada.", file=discord.File(fp=buffer, filename='foto.png'))
+            await ctx.send_followup(content=f"Aqui tienes tu foto de perfil personalizada.", file=discord.File(fp=buffer, filename='foto.png'), ephemeral=True)
 
             insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-200)
         else:
