@@ -9,7 +9,7 @@ class Team():
         y: int=None,
         size: int=None,
         color: str='white',
-        portrait: str=None,
+        frame: str=None,
     ) -> None:
     
         self.facebook = facebook
@@ -20,7 +20,7 @@ class Team():
         self.y = y
         self.size = size
         self.color = color
-        self.portrait = portrait
+        self.frame = frame
 
     def return_social_media_link(self, sm):    
         if sm == 'Facebook':
@@ -36,7 +36,7 @@ class Portadas():
         self.fnatic = Team(
             facebook='https://static.wixstatic.com/media/3c06e6_55e4d4b7c51f44668a11119f6407e41d~mv2.png', 
             twitter='https://static.wixstatic.com/media/3c06e6_2b2bd01f110d432f9ed5a1c8bda2cdb1~mv2.png',
-            portrait='https://static.wixstatic.com/media/3c06e6_4dbb3dccb06241ac934de7e533419058~mv2.png',
+            frame='https://static.wixstatic.com/media/3c06e6_4dbb3dccb06241ac934de7e533419058~mv2.png',
             name='Fnatic',
             x={'Facebook': 510, 'Twitter': 950},
             y={'Facebook': 185, 'Twitter': 250},
@@ -46,7 +46,7 @@ class Portadas():
         self.isurus = Team(
             facebook='https://static.wixstatic.com/media/3c06e6_608acbe2ed8e42428c3344646d346f89~mv2.png', 
             twitter='https://static.wixstatic.com/media/3c06e6_525720d4f5c84eaea6e397e2a82d93ac~mv2.png',
-            portrait='https://static.wixstatic.com/media/3c06e6_e686e67c17d94ebb874be3f7d0469e99~mv2.png',
+            frame='https://static.wixstatic.com/media/3c06e6_e686e67c17d94ebb874be3f7d0469e99~mv2.png',
             name='Isurus',
             x={'Facebook': 550, 'Twitter': 1153},
             y={'Facebook': 185, 'Twitter': 250},
