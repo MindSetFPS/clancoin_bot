@@ -57,7 +57,7 @@ class BetOptionButton(discord.ui.Button):
             custom_id: str = None,
             button: int=0,
             row: int = 0,
-            prediction_id: int=0,
+            prediction_id: int=None,
             prize: int=None,
             entry_cost: int=None, 
             selection: int=None,
@@ -87,10 +87,11 @@ class BetOptionButton(discord.ui.Button):
             if user_is_mod(interaction):
                 # cuando el mod da click, se entiende que ese fue el ganador
                     #actualizar db con el ganador
-                set_prediction_correct_answer(winner=self.button, prediction_id=self.prediction_id)
+                set_prediction_correct_answer(winner=self.selection, prediction_id=self.prediction_id)
 
                 # traer de la db a los jugadores que votaron por esta opcion
-                predictors = get_predictors(prediction_id=self.prediction_id, pick=self.button)
+                print(f'prediction_id: {self.prediction_id}')
+                predictors = get_predictors(prediction_id=self.prediction_id, pick=self.selection)
 
                 for prediction in predictors:
                     # a cada uno, crearles una transaccion por el valor dado 
