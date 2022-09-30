@@ -27,7 +27,7 @@ def find_or_create_user(user):
 def set_new_balance(user, price, operation):
     data = get_user_coins(user)
     balance = data.data[0]["coins"]
-
+    
     print("old balance", balance)
     print("price ", price)
     new_balance = operation(balance, price)
@@ -72,8 +72,8 @@ def create_new_prediction(text, option0, option1, prize):
 def create_users_prediction_pick(prediction_id, pick, user):
     return supabase.table("prediction_pick").insert({"prediction": prediction_id, "pick": pick, "user": user}).execute()
 
-def set_prediction_correct_answer(winner, id):
-    supabase.table("prediction").update({"winner": winner }).eq("id", id).execute()
+def set_prediction_correct_answer(winner, prediction_id):
+    supabase.table("prediction").update({"winner": winner }).eq("id", prediction_id).execute()
 
 def user_has_already_picked(user: str, prediction_id: int):
     query = supabase.table("prediction_pick").select("*").match({"user": user, "prediction": int(prediction_id)}).execute()
