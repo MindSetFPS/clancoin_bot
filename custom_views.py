@@ -84,6 +84,7 @@ class BetOptionButton(discord.ui.Button):
             self.question = question
 
         async def callback(self, interaction: discord.Interaction ):
+            await interaction.response.defer()
             if user_is_mod(interaction):
                 # cuando el mod da click, se entiende que ese fue el ganador
                     #actualizar db con el ganador
@@ -101,10 +102,10 @@ class BetOptionButton(discord.ui.Button):
 
                 # eliminar botones, y poner el resultadoHa ganado X."
                 embed = discord.Embed(title=self.question, description=f'Respuesta correcta: {self.emoji} {self.label}')
-                await interaction.response.edit_message(content=None, view=None, embed=embed)
+                await interaction.followup.edit_message(content=None, view=None, embed=embed, message_id=interaction.message.id)
             else:
                 confirmation_view = ConfirmationView(selection=self.selection, option=self.options[self.selection],  emoji=self.emoji, prediction_id=self.prediction_id, prize=self.prize, entry_cost=self.entry_cost)
-                await interaction.response.send_message(content=None, view=confirmation_view, ephemeral=True)
+                await interaction.followup.send(content=None, view=confirmation_view, ephemeral=True)
 
 class ConfirmationView(discord.ui.View):
         def __init__(
