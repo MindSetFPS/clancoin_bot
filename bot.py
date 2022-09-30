@@ -107,7 +107,6 @@ async def give_clancoins(ctx, member: discord.Member, amount: int):
         discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
         discord_member_full_username = member.name + '#' + member.discriminator
         transaction = insert_gift_transaction(sent_by=discord_full_user, received_by=discord_member_full_username, amount=amount)
-        
         await ctx.respond(f'Le diste {amount} {clancoin_emote} a {member.mention}.')
     else:
         await ctx.respond("No tienes permiso para hacer eso.")
@@ -168,7 +167,7 @@ async def create_new_bet(
         embed.add_field(name="Entrada: ", value=f"{clancoin_emote} {costo}")
         embed.add_field(name="Premio: ", value=f"{clancoin_emote} {prize}")
 
-        betView = BetView(ctx=ctx, teamOption0=team_option0, teamOption1=team_option1, question=question, id=prediction[0]["id"], prize=prize, entry_cost=costo)
+        betView = BetView(ctx=ctx, teamOption0=team_option0, teamOption1=team_option1, question=question, prediction_id=prediction[0]["id"], prize=prize, entry_cost=costo)
 
         await channel.send(content=None, view=betView, embed=embed)
         await ctx.respond(content=f'Creada encuesta "{question}" en el canal {channel.mention}')
@@ -229,7 +228,7 @@ async def profile_picture(ctx: discord.ApplicationContext, equipo: Option(str, '
             fpbuffer = io.BytesIO(await ctx.author.display_avatar.read())
 
             photo = Image.open(fpbuffer)
-            marco =  Image.open(urlopen(team.portrait))
+            marco =  Image.open(urlopen(team.frame))
 
             marco_resized = marco.resize((photo.height, photo.width), Image.Resampling.LANCZOS)
 
@@ -240,7 +239,7 @@ async def profile_picture(ctx: discord.ApplicationContext, equipo: Option(str, '
 
             await ctx.send_followup(content=f"Aqui tienes tu foto de perfil personalizada.", file=discord.File(fp=buffer, filename='foto.png'), ephemeral=True)
 
-            insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-200)
+            insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-150)
         else:
             await ctx.respond(f"No tienes suficientes Clan Coins {clancoin_emote}", ephemeral=True)
     else:

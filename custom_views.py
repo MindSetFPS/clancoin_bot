@@ -10,13 +10,13 @@ from transaction import insert_play_reward, insert_promo_reward_transaction, get
 clancoin_emote = '<:clancoin:974120483693924464>'
 
 class BetView(discord.ui.View):
-    def __init__(self, ctx=discord.ApplicationContext, teamOption0=str, teamOption1=str, question=str, id=int, prize=int, entry_cost=int):
+    def __init__(self, ctx=discord.ApplicationContext, teamOption0=str, teamOption1=str, question=str, prediction_id=int, prize=int, entry_cost=int):
         super().__init__(
             timeout=43200
         )
 
         self.question = question
-        self.id = id
+        self.prediction_id = prediction_id
         self.prize = prize
         self.entry_cost = entry_cost
 
@@ -29,28 +29,115 @@ class BetView(discord.ui.View):
         self.display_name1 = teamOption1.replace("_", " ")
         self.display_name1 = self.display_name1.title()
         self.emoji1 = None
-        
-        self.ctx = ctx
-        #find first emoji
-        for emoji in self.ctx.guild.emojis:
-            if emoji.name == self.teamOption0:
-                self.emoji0 = emoji
-                break   
 
-        for emoji in self.ctx.guild.emojis:
-            if emoji.name == self.teamOption1:
-                self.emoji1 = emoji
-                break
+        for emoji in ctx.guild.emojis:
+                if emoji.name == self.teamOption0:
+                    self.emoji0 = emoji
+                    break
+
+        for emoji in ctx.guild.emojis:
+                if emoji.name == self.teamOption1:
+                    self.emoji1 = emoji
+                    break
 
         #crear prediccion en db
+        team1_Button = BetOptionButton(question=self.question, options=(self.display_name0, self.display_name0), selection=0 ,style=discord.ButtonStyle.gray, emoji=self.emoji0, button=1, prediction_id=self.prediction_id, prize=self.prize, entry_cost=self.entry_cost)
+        team2_Button = BetOptionButton(question=self.question, options=(self.display_name0, self.display_name1), selection=1 ,style=discord.ButtonStyle.gray, emoji=self.emoji1, button=1, prediction_id=self.prediction_id, prize=self.prize, entry_cost=self.entry_cost)
 
-        team0_Button = BetOptionButton(label=self.display_name0, style=discord.ButtonStyle.blurple, emoji=self.emoji0, button=0, question=self.question, id=self.id, prize=self.prize, entry_cost=self.entry_cost)
-        team1_Button = BetOptionButton(label=self.display_name1, style=discord.ButtonStyle.gray, emoji=self.emoji1, button=1, question=self.question, id=self.id, prize=self.prize, entry_cost=self.entry_cost)
-
-        self.add_item(team0_Button)
         self.add_item(team1_Button)
+        self.add_item(team2_Button)
 
 class BetOptionButton(discord.ui.Button):
+        def __init__(
+            self,
+            options: tuple,
+            emoji: Union[str, discord.Emoji, discord.PartialEmoji] = None,
+            style: discord.ButtonStyle = discord.ButtonStyle.green,
+            disabled: bool = False,
+            custom_id: str = None,
+            button: int=0,
+            row: int = 0,
+            prediction_id: int=0,
+            prize: int=None,
+            entry_cost: int=None, 
+            selection: int=None,
+            question: str=None,
+        ):
+            super().__init__(
+                emoji=emoji,
+                style=style,
+                disabled=disabled,
+                custom_id=custom_id,
+                row=row,
+                label=options[selection]
+            )
+            # self.emoji: Union[str, discord.Emoji, discord.PartialEmoji] = emoji
+            self.style = style
+            self.disabled = disabled
+            self.label = options[selection]
+            self.button = button
+            self.prediction_id = prediction_id
+            self.prize = prize
+            self.entry_cost = entry_cost
+            self.selection = selection
+            self.options = options
+            self.question = question
+
+        async def callback(self, interaction: discord.Interaction ):
+            if user_is_mod(interaction):
+                # cuando el mod da click, se entiende que ese fue el ganador
+                    #actualizar db con el ganador
+                set_prediction_correct_answer(winner=self.button, prediction_id=self.prediction_id)
+
+                # traer de la db a los jugadores que votaron por esta opcion
+                predictors = get_predictors(prediction_id=self.prediction_id, pick=self.button)
+
+                for prediction in predictors:
+                    # a cada uno, crearles una transaccion por el valor dado 
+                    set_prediction_transaction(transaction_type=f'prediction_{str(self.prediction_id)}', amount=self.prize, sent_by=user_to_string(ctx=interaction.guild.owner), received_by=prediction["user"])
+                    #editar el balance con el nuevo 
+                    set_new_balance(user=prediction["user"], price=self.prize, operation=operator.add)
+
+                # eliminar botones, y poner el resultadoHa ganado X."
+                embed = discord.Embed(title=self.question, description=f'Respuesta correcta: {self.emoji} {self.label}')
+                await interaction.response.edit_message(content=None, view=None, embed=embed)
+            else:
+                confirmation_view = ConfirmationView(selection=self.selection, option=self.options[self.selection],  emoji=self.emoji, prediction_id=self.prediction_id, prize=self.prize, entry_cost=self.entry_cost)
+                await interaction.response.send_message(content=None, view=confirmation_view, ephemeral=True)
+
+class ConfirmationView(discord.ui.View):
+        def __init__(
+            self, 
+            prediction_id: int, 
+            prize: int, 
+            entry_cost: int,
+            option: str=None,
+            emoji: Union[str, discord.Emoji, discord.PartialEmoji] = None,
+            selection: int=None,
+        ):
+            super().__init__(
+                timeout=43200
+            )
+
+            self.prediction_id = prediction_id
+            self.prize = prize
+            self.entry_cost = entry_cost
+            self.emoji = emoji
+            self.option = option
+            self.selection = selection
+
+            self.add_item(
+                ConfirmVote(
+                    label=f'Confirmar voto por {self.option}', 
+                    emoji=self.emoji, 
+                    prediction_id=self.prediction_id,
+                    entry_cost=self.entry_cost,
+                    prize=self.prize,
+                    selection=self.selection
+                ), 
+            )
+
+class ConfirmVote(discord.ui.Button):
         def __init__(
             self,
             label: str = None,
@@ -60,11 +147,10 @@ class BetOptionButton(discord.ui.Button):
             custom_id: str = None,
             button: int=0,
             row: int = 0,
-            id: int=0,
-            question: str=None,
+            prediction_id: int=0,
             prize: int=None,
-            entry_cost: int=None
-
+            entry_cost: int=None,
+            selection: int=None
         ):
             super().__init__(
                 emoji=emoji,
@@ -79,38 +165,24 @@ class BetOptionButton(discord.ui.Button):
             self.disabled = disabled
             self.label = label
             self.button = button
-            self.id = id
-            self.question = question
+            self.prediction_id = prediction_id
             self.prize = prize
             self.entry_cost = entry_cost
+            self.selection = selection
 
         async def callback(self, interaction: discord.Interaction ):
-            if user_is_mod(interaction):
-                # cuando el mod da click, se entiende que ese fue el ganador
-                    #actualizar db con el ganador
-                set_prediction_correct_answer(winner=self.button, id=self.id)
-
-                # traer de la db a los jugadores que votaron por esta opcion
-                predictors = get_predictors(prediction_id=self.id, pick=self.button)
-
-                for prediction in predictors:
-                    # a cada uno, crearles una transaccion por el valor dado 
-                    set_prediction_transaction(transaction_type=f'prediction_{str(self.id)}', amount=self.prize, sent_by=user_to_string(ctx=interaction.guild.owner), received_by=prediction["user"])
-                    #editar el balance con el nuevo 
-                    set_new_balance(user=prediction["user"], price=self.prize, operation=operator.add)
-
-                # eliminar botones, y poner el resultadoHa ganado X."
-                embed = discord.Embed(title=self.question, description=f'Ganador: {self.emoji} {self.label}')
-                await interaction.response.edit_message(content=None, view=None, embed=embed)
-            else:
                 #al dar click, revisar si ya voto
-
-                if user_has_already_picked(user=user_to_string(interaction.user), prediction_id=self.id):
+                if user_has_already_picked(user=user_to_string(interaction.user), prediction_id=self.prediction_id):
                     await interaction.response.send_message(content=f'Tu voto ya no se puede alterar.', ephemeral=True)
                 else:
                     #    si no crear una entrada con su respuesta en la db
-                    pick = create_users_prediction_pick(pick=self.button, prediction_id=self.id, user=user_to_string(interaction.user))
-                    create_prediction_entry_transaction(transaction_type=f'prediction_entry_{str(self.id)}', amount=-self.entry_cost, sent_by=user_to_string(ctx=interaction.guild.owner), received_by=user_to_string(ctx=interaction.user))
+                    pick = create_users_prediction_pick(pick=self.selection, prediction_id=self.prediction_id, user=user_to_string(interaction.user))
+                    create_prediction_entry_transaction(
+                        transaction_type=f'prediction_entry_{str(self.prediction_id)}', 
+                        amount=-self.entry_cost, 
+                        sent_by=user_to_string(ctx=interaction.guild.owner), 
+                        received_by=user_to_string(ctx=interaction.user)
+                    )
                     
                     #    si ya tiene, mandar un mensaje diciendo que ya voto y por quien
                     await interaction.response.send_message(content=f'Votaste por {self.emoji} {self.label}', ephemeral=True)
