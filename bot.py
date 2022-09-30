@@ -216,20 +216,20 @@ async def portada(
     else:
         await ctx.respond(f"Tienes {0} {clancoin_emote}", ephemeral=True)
 
-@bot.slash_command(name="marco_isurus", description="Obten una foto de perfil para apoyar a tu equipo favorito durante #Worlds2022.")
-async def profile_picture(ctx: discord.ApplicationContext):
-
+@bot.slash_command(name="marco", description="Obten una foto de perfil para apoyar a tu equipo favorito durante #Worlds2022.")
+async def profile_picture(ctx: discord.ApplicationContext, equipo: Option(str, '¿De que equipo es el diseño de tu marco?', choices=['Isurus', 'Fnatic'])):
     coins = get_user_coins(user=user_to_string(ctx=ctx.user))
     if len(coins.data) > 0:
         if coins.data[0]["coins"] > 150:
             current_coins = coins.data[0]["coins"]
             await ctx.defer()
 
-            url2 = 'https://static.wixstatic.com/media/3c06e6_e686e67c17d94ebb874be3f7d0469e99~mv2.png'
+            team = portadas.return_team(team=equipo)
+
             fpbuffer = io.BytesIO(await ctx.author.display_avatar.read())
 
             photo = Image.open(fpbuffer)
-            marco =  Image.open(urlopen(url2))
+            marco =  Image.open(urlopen(team.portrait))
 
             marco_resized = marco.resize((photo.height, photo.width), Image.Resampling.LANCZOS)
 
