@@ -178,7 +178,7 @@ async def create_new_bet(
 async def portada(
     ctx: discord.ApplicationContext, 
     red: Option(str, '¿Para que red social quiere la portada?', choices=['Facebook', 'Twitter']), 
-    equipo: Option(str, 'El equipo del que quieres la portada.', choices=['Isurus', 'Fnatic']),
+    equipo: Option(str, 'El equipo del que quieres la portada.', choices=['T1', 'Isurus', 'Fnatic']),
     nombre: Option(str=None, description="Nombre (Opcional, si no escribes ninguno, usa tu nombre de Discord)", required=False)
 ):
     coins = get_user_coins(user=user_to_string(ctx=ctx.user))
@@ -201,7 +201,7 @@ async def portada(
                 xy=(portada_template.x[red], portada_template.y[red]), 
                 font=font, 
                 fill=portada_template.color, 
-                anchor='rm'
+                anchor=portada_template.anchor
             )
 
             porta = io.BytesIO()    
