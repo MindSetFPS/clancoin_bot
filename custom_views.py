@@ -22,12 +22,12 @@ class BetView(discord.ui.View):
 
         self.teamOption0 = teamOption0
         self.display_name0 = teamOption0.replace("_", " ")
-        self.display_name0 = self.display_name0.title()
+        #self.display_name0 = self.display_name0.title()
         self.emoji0 = None
 
         self.teamOption1 = teamOption1
         self.display_name1 = teamOption1.replace("_", " ")
-        self.display_name1 = self.display_name1.title()
+        #self.display_name1 = self.display_name1.title()
         self.emoji1 = None
 
         for emoji in ctx.guild.emojis:
