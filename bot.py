@@ -151,8 +151,8 @@ async def add_new_item(ctx):
 async def create_new_bet(
     ctx: discord.ApplicationContext, 
     question: Option(str, "Pregunta de la prediccion."), 
-    team_option0: Option(str, "Equipo 1", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs']), 
-    team_option1: Option(str, "Equipo 2", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs']),
+    team_option0: Option(str, "Equipo 1", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs', '100', 'c9', 'cfo', 'dk', 'edg', 'g2', 'gam', 'jdg', 'rge', 't1', 'tes', 'gen']), 
+    team_option1: Option(str, "Equipo 2", choices=['isurus', 'beyond', 'drx', 'fnatic', 'rng', 'dnf','evil_geniuses', 'mad_lions', 'saigon_buffalo', 'loud', 'istambul_wildcats', 'chiefs', '100', 'c9', 'cfo', 'dk', 'edg', 'g2', 'gam', 'jdg', 'rge', 't1', 'tes', 'gen']),
     channel: Option(discord.TextChannel, "Canal donde se publicara esta prediccion."),
     prize: Option(int, "Cuantas Clan Coins recibiran los ganadores de la prediccion.") = 75,
     costo: Option(int, "Costo por entrar a la prediccion.") = 25,
