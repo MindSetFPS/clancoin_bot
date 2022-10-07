@@ -221,16 +221,15 @@ class ApproveView(discord.ui.View):
                         await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 250 Clan Coins.", view=None)
 
                 if self.command == "recompensa_promo":
-                    for tier in tiers:
+                    for index, tier in enumerate(tiers):
                         reward = 0
                         if tier.display_name == self.tier:
                             aprover_mod = interaction.user.name + '#' + interaction.user.discriminator
                             author_name = self.author.name + '#' + self.author.discriminator
                             reward = tier.reward
-                            if self.division == "IV":
+                            if self.division == "IV" or index > 5:
                                 reward = reward * tier.multiplier
                             insert_promo_reward_transaction(sent_by=aprover_mod, received_by=author_name, amount=reward, transaction_type=f'{tier.name}_{self.division}')
-                            print('reward sent')
                             await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} {int(reward)} Clan Coins.", view=None)
                             break
                         # insert_promo_reward_transaction(sent_by=interaction.user, received_by=self.author_id, amount=tier.reward, transaction_type=f'{tier.name}_{self.tier.lower()}')
