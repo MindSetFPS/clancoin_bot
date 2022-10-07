@@ -107,3 +107,7 @@ def insert_portrait_transaction(sent_by, received_by, amount):
 def insert_frame_transaction(sent_by, received_by, amount):
     #do not get cofused with insert_gift_transaction, which gives the user a welcome goodie
     new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="frame_buy")
+
+#promo rewards should start with 'promo_' to make it easy to match
+def get_user_promos(user):
+    return supabase.table("transaction").select("*").like(column='transaction_type', pattern='promo_%').eq(column='received_by', value=user).execute()
