@@ -21,23 +21,23 @@ tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, cha
 
 def get_user_tier(tier):
         match tier:
-            case "iron":
+            case iron.name | iron.display_name:
                 return iron
-            case "bronze":
+            case bronze.name | bronze.display_name :
                 return bronze
-            case "silver":
+            case silver.name | silver.display_name:
                 return silver
-            case "gold":
+            case gold.name | gold.display_name:
                 return gold
-            case "platinum":
+            case platinum.name | platinum.display_name:
                 return platinum
-            case "diamond":
+            case diamond.name | diamond.display_name:
                 return diamond
-            case "master":
+            case master.name | master.display_name:
                 return master
-            case "grandmaster":
+            case grandmaster.name | grandmaster.display_name:
                 return grandmaster
-            case "challenger":
+            case challenger.name | challenger.display_name:
                 return challenger
             case _:
                 return False
