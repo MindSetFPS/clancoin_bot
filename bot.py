@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 from discord.commands import Option
 from discord.ext import commands, pages
 from helpers import user_is_mod, user_time, user_to_string
-from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger
-from transaction import get_user_coins, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction, insert_gift_transaction, user_got_welcome_gift, insert_portrait_transaction
+from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger, get_user_tier, divisions
+from transaction import get_user_coins, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction, insert_gift_transaction, user_got_welcome_gift, insert_portrait_transaction, get_user_promos
 from custom_views import ApproveView, Store, Create_add_item_view, BetView
 from PIL import Image, ImageFont, ImageDraw
 from urllib.request import urlopen
@@ -46,15 +46,63 @@ async def on_application_command_error(ctx, error):
 @bot.slash_command(name="recompensa_promo", description="Reclama tu recompensa por ganar tu promo.")
 async def recompensa_division(
     ctx: discord.ApplicationContext,
-    img: Option(discord.SlashCommandOptionType.attachment, "Atachment"),
+    img: Option(discord.SlashCommandOptionType.attachment, "Atachment", required=True),
     tier: Option(str, "Tier", choices=[iron.display_name , bronze.display_name , silver.display_name, gold.display_name, platinum.display_name, diamond.display_name, master.display_name, grandmaster.display_name, challenger.display_name ]),
     division: Option(str, "Division", choices=["IV", "III", "II", "I"]),
     mensaje: Option(str, "Deja un mensaje libre.") = " "
 ):
     print('/recompensa_promo')
-    img_to_file = await img.to_file()
-    await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
-    await ctx.respond(f'{ctx.guild.owner.mention}', view=ApproveView(ctx=ctx, tier=tier, division=division, command="recompensa_promo"))
+    promos = get_user_promos(user_to_string(ctx.user))
+    print(promos.data)
+
+    claiming_tier = get_user_tier(tier=tier)
+    claiming_division = divisions[division]
+
+    if len(promos.data) > 0:
+        print('has used the command')
+        highest_elo = 0 
+        highest_division = 0
+
+        for promo in promos.data:
+            transaction_type = promo["transaction_type"]
+            print(transaction_type)
+            tier_name = transaction_type.removeprefix('promo_')
+            tier_name = tier_name.split("_", 1)
+ 
+            #tier_name[0] => tier name (bronze, silver, platinum)
+            #tier_name[1] => division number (4, 3, 2, 1)
+
+            tier_object = get_user_tier(tier=tier_name[0])
+            print(tier_object.name)
+
+            if tier_object.value >= highest_elo:
+                highest_elo = tier_object.value
+                highest_division = tier_name[1]
+
+        print('highest elo: ' + str(highest_elo))
+
+        if claiming_tier.value > highest_elo:
+            img_to_file = await img.to_file()
+            await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
+            await ctx.respond(f'{ctx.guild.owner.mention}', view=ApproveView(ctx=ctx, tier=tier, division=divisions[division], command="recompensa_promo"))
+            #claim reword
+
+        if claiming_tier.value == highest_elo:
+            #check if division improved
+            if claiming_division >= int(highest_division):
+                await ctx.respond("Ya conseguiste este Elo, ¿Te gustaría seguir avanzando?")
+                
+            if claiming_division < int(highest_division):
+                img_to_file = await img.to_file()
+                await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
+                await ctx.respond(f'{ctx.guild.owner.mention}', view=ApproveView(ctx=ctx, tier=tier, division=divisions[division], command="recompensa_promo"))
+        
+        if claiming_tier.value < highest_elo:
+            #reject reward, you cannot claim a lower tier than you already have
+            await ctx.respond("Ya conseguiste este Elo, ¿Te gustaría seguir avanzando?")
+
+    else:
+        await ctx.respond(f'{ctx.guild.owner.mention}', view=ApproveView(ctx=ctx, tier=tier, division=divisions[division], command="recompensa_promo"))
 
 @bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada. Enfriamiento: 24 horas.")
 @commands.cooldown(1, 60 * 60 * 24, commands.BucketType.user)
