@@ -77,7 +77,9 @@ async def recompensa_division(
 
             if tier_object.value >= highest_elo:
                 highest_elo = tier_object.value
-                highest_division = tier_name[1]
+                if len(tier_name) > 1:
+                    print(tier_name[1])
+                    highest_division = tier_name[1]
 
         print('highest elo: ' + str(highest_elo))
 
