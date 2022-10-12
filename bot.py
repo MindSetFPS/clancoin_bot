@@ -62,6 +62,7 @@ async def recompensa_division(
         print('has used the command')
         highest_elo = 0 
         highest_division = 0
+        img_to_file = await img.to_file()
 
         for promo in promos.data:
             transaction_type = promo["transaction_type"]
@@ -84,7 +85,6 @@ async def recompensa_division(
         print('highest elo: ' + str(highest_elo))
 
         if claiming_tier.value > highest_elo:
-            img_to_file = await img.to_file()
             await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
             await ctx.respond(f'{ctx.guild.owner.mention}', view=ApproveView(ctx=ctx, tier=tier, division=divisions[division], command="recompensa_promo"))
             #claim reword
