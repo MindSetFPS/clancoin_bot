@@ -7,7 +7,7 @@ from discord.commands import Option
 from discord.ext import commands, pages
 from helpers import user_is_mod, user_time, user_to_string
 from league_of_legends import iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger, get_user_tier, divisions
-from transaction import get_user_coins, insert_welcome_gift_transaction, create_new_prediction, insert_daily_transaction, insert_gift_transaction, user_got_welcome_gift, insert_portrait_transaction, get_user_promos
+from models import user, prediction, shop
 from custom_views import ApproveView, Store, Create_add_item_view, BetView
 from PIL import Image, ImageFont, ImageDraw
 from urllib.request import urlopen
@@ -32,7 +32,7 @@ async def on_ready():
 async def on_member_join(member):
     bot_full_user = bot.user.name + '#' + bot.user.discriminator
     discord_full_user = member.name + '#' + member.discriminator
-    insert_welcome_gift_transaction(amount=500, sent_by=bot_full_user, received_by=discord_full_user)
+    shop.insert_welcome_gift_transaction(amount=500, sent_by=bot_full_user, received_by=discord_full_user)
     channel = discord.utils.get(member.guild.channels, name="👋・bienvenidas")
     await channel.send(f"<@{member.id}> recibiste 500 {clancoin_emote} Clan Coins.")
 
@@ -52,7 +52,7 @@ async def recompensa_division(
     mensaje: Option(str, "Deja un mensaje libre.") = " "
 ):
     print('/recompensa_promo')
-    promos = get_user_promos(user_to_string(ctx.user))
+    promos = user.get_user_promos(user_to_string(ctx.user))
     print(promos.data)
 
     claiming_tier = get_user_tier(tier=tier)
@@ -133,9 +133,9 @@ async def get_coins(ctx):
     bot_full_user = bot.user.name + '#' + bot.user.discriminator
 
     #get current coins number
-    coins = get_user_coins(user=user_to_string(ctx.author))
+    coins = user.get_user_coins(user=user_to_string(ctx.author))
     current_coins = coins.data[0]["coins"]
-    transaction = insert_daily_transaction(sent_by=bot_full_user, received_by=discord_full_user, amount=10 )
+    transaction = shop.insert_daily_transaction(sent_by=bot_full_user, received_by=discord_full_user, amount=10 )
     await ctx.respond(f"Recibiste tus monedas diarias, ahora tienes {current_coins + 10} {clancoin_emote}", ephemeral=True)
 
 @bot.slash_command(name="mis_clancoins", description="Mira cuantas Clan Coins tienes.")
@@ -143,7 +143,7 @@ async def check_clancoins(ctx):
     print("/mis_clancoins")
     discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
     
-    coins = get_user_coins(user=discord_full_user)
+    coins = user.get_user_coins(user=discord_full_user)
 
     if len(coins.data) > 0:
         current_coins = coins.data[0]["coins"]
@@ -156,7 +156,7 @@ async def give_clancoins(ctx, member: discord.Member, amount: int):
     if user_is_mod(ctx=ctx):
         discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
         discord_member_full_username = member.name + '#' + member.discriminator
-        transaction = insert_gift_transaction(sent_by=discord_full_user, received_by=discord_member_full_username, amount=amount)
+        transaction = shop.insert_gift_transaction(sent_by=discord_full_user, received_by=discord_member_full_username, amount=amount)
         await ctx.respond(f'Le diste {amount} {clancoin_emote} a {member.mention}.')
     else:
         await ctx.respond("No tienes permiso para hacer eso.")
@@ -175,7 +175,7 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
         for user in new_list:
             user_clean = user.lstrip()
             discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
-            transaction = insert_gift_transaction(sent_by=discord_full_user, received_by=user_clean, amount=amount)
+            transaction = shop.insert_gift_transaction(sent_by=discord_full_user, received_by=user_clean, amount=amount)
                 
             received.append(user)
 
@@ -185,7 +185,7 @@ async def give_coins_to_many_users(ctx, users_list: str, amount: int):
         await ctx.send_followup(content="No tienes permiso para hacer eso.")
 
 @bot.slash_command(name="tienda", description="Mira la tienda de Clan y compra tus items favoritos.")
-async def shop(ctx: discord.ApplicationContext):
+async def shop_command(ctx: discord.ApplicationContext):
     paginator = Store(user_to_string(ctx=ctx.author)).paginator
     await paginator.respond(ctx.interaction, ephemeral=True)
 
@@ -210,14 +210,14 @@ async def create_new_bet(
 
     if user_is_mod(ctx=ctx):
         # print("User is mod, continue")
-        prediction = create_new_prediction(option0=team_option0, option1=team_option1, prize=prize, text=question)
-        print(prediction[0]["id"])
+        predict = prediction.create_new_prediction(option0=team_option0, option1=team_option1, prize=prize, text=question)
+        print(predict[0]["id"])
 
         embed = discord.Embed(title=question)
         embed.add_field(name="Entrada: ", value=f"{clancoin_emote} {costo}")
         embed.add_field(name="Premio: ", value=f"{clancoin_emote} {prize}")
 
-        betView = BetView(ctx=ctx, teamOption0=team_option0, teamOption1=team_option1, question=question, prediction_id=prediction[0]["id"], prize=prize, entry_cost=costo)
+        betView = BetView(ctx=ctx, teamOption0=team_option0, teamOption1=team_option1, question=question, prediction_id=predict[0]["id"], prize=prize, entry_cost=costo)
 
         await channel.send(content=None, view=betView, embed=embed)
         await ctx.respond(content=f'Creada encuesta "{question}" en el canal {channel.mention}')
@@ -231,7 +231,7 @@ async def portada(
     equipo: Option(str, 'El equipo del que quieres la portada.', choices=['T1', 'Isurus', 'Fnatic']),
     nombre: Option(str=None, description="Nombre (Opcional, si no escribes ninguno, usa tu nombre de Discord)", required=False)
 ):
-    coins = get_user_coins(user=user_to_string(ctx=ctx.user))
+    coins = user.get_user_coins(user=user_to_string(ctx=ctx.user))
 
     if len(coins.data) > 0:
         if coins.data[0]["coins"] > 200:
@@ -259,7 +259,7 @@ async def portada(
             porta.seek(0)
 
             await ctx.send_followup(content="Aqui tienes tu portada personalizada.", file=discord.File(fp=porta, filename='portada.png'))
-            insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-200)
+            shop.insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-200)
         else:
             await ctx.respond(f"No tienes suficientes Clan Coins {clancoin_emote}", ephemeral=True)
     else:
@@ -267,7 +267,7 @@ async def portada(
 
 @bot.slash_command(name="marco", description="Obten una foto de perfil para apoyar a tu equipo favorito durante #Worlds2022.")
 async def profile_picture(ctx: discord.ApplicationContext, equipo: Option(str, '¿De que equipo es el diseño de tu marco?', choices=['Isurus', 'Fnatic'])):
-    coins = get_user_coins(user=user_to_string(ctx=ctx.user))
+    coins = user.get_user_coins(user=user_to_string(ctx=ctx.user))
     if len(coins.data) > 0:
         if coins.data[0]["coins"] > 150:
             current_coins = coins.data[0]["coins"]
@@ -289,7 +289,7 @@ async def profile_picture(ctx: discord.ApplicationContext, equipo: Option(str, '
 
             await ctx.send_followup(content=f"Aqui tienes tu foto de perfil personalizada.", file=discord.File(fp=buffer, filename='foto.png'), ephemeral=True)
 
-            insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-150)
+            shop.insert_portrait_transaction(sent_by=user_to_string(ctx=bot.user), received_by=user_to_string(ctx=ctx.user), amount=-150)
         else:
             await ctx.respond(f"No tienes suficientes Clan Coins {clancoin_emote}", ephemeral=True)
     else:

@@ -5,7 +5,7 @@ from discord.ui import Button
 from discord.ext import commands, pages
 from helpers import user_is_mod, move_forward, user_to_string
 from league_of_legends import divisions, tiers
-from transaction import insert_play_reward, insert_promo_reward_transaction, get_store_items, get_user_coins, insert_item_buy, set_new_balance, create_new_store_item, create_new_prediction, create_users_prediction_pick, set_prediction_correct_answer, user_has_already_picked, get_predictors, set_prediction_transaction, create_prediction_entry_transaction
+from models import prediction, shop, user
 
 clancoin_emote = '<:clancoin:974120483693924464>'
 
@@ -88,17 +88,24 @@ class BetOptionButton(discord.ui.Button):
             if user_is_mod(interaction):
                 # cuando el mod da click, se entiende que ese fue el ganador
                     #actualizar db con el ganador
-                set_prediction_correct_answer(winner=self.selection, prediction_id=self.prediction_id)
+                prediction.set_prediction_correct_answer(winner=self.selection, prediction_id=self.prediction_id)
 
                 # traer de la db a los jugadores que votaron por esta opcion
                 print(f'prediction_id: {self.prediction_id}')
-                predictors = get_predictors(prediction_id=self.prediction_id, pick=self.selection)
+                predictors = prediction.get_predictors(prediction_id=self.prediction_id, pick=self.selection)
 
-                for prediction in predictors:
+                for predict in predictors:
+
                     # a cada uno, crearles una transaccion por el valor dado 
-                    set_prediction_transaction(transaction_type=f'prediction_{str(self.prediction_id)}', amount=self.prize, sent_by=user_to_string(ctx=interaction.guild.owner), received_by=prediction["user"])
+                    prediction.set_prediction_transaction(
+                        transaction_type=f'prediction_{str(self.prediction_id)}', 
+                        amount=self.prize, 
+                        sent_by=user_to_string(ctx=interaction.guild.owner), 
+                        received_by=predict["user"]
+                    )
+
                     #editar el balance con el nuevo 
-                    set_new_balance(user=prediction["user"], price=self.prize, operation=operator.add)
+                    user.set_new_balance(user=predict["user"], price=self.prize, operation=operator.add)
 
                 # eliminar botones, y poner el resultadoHa ganado X."
                 embed = discord.Embed(title=self.question, description=f'Respuesta correcta: {self.emoji} {self.label}')
@@ -174,15 +181,21 @@ class ConfirmVote(discord.ui.Button):
 
         async def callback(self, interaction: discord.Interaction ):
                 #al dar click, revisar si ya voto
-                if user_has_already_picked(user=user_to_string(interaction.user), prediction_id=self.prediction_id):
+                if prediction.user_has_already_picked(user=user_to_string(interaction.user), prediction_id=self.prediction_id):
                     await interaction.response.send_message(content=f'Tu voto ya no se puede alterar.', ephemeral=True)
                 else:
                     #    si no crear una entrada con su respuesta en la db
-                    pick = create_users_prediction_pick(pick=self.selection, prediction_id=self.prediction_id, user=user_to_string(interaction.user))
-                    create_prediction_entry_transaction(
+                    pick = prediction.create_users_prediction_pick(pick=self.selection, prediction_id=self.prediction_id, user=user_to_string(interaction.user))
+
+                    guild_owner_str = user_to_string(ctx=interaction.guild.owner)
+                    print(guild_owner_str)
+                    print(type(guild_owner_str))
+
+                    prediction.create_prediction_entry_transaction(
+
                         transaction_type=f'prediction_entry_{str(self.prediction_id)}', 
                         amount=-self.entry_cost, 
-                        sent_by=user_to_string(ctx=interaction.guild.owner), 
+                        sent_by=guild_owner_str, 
                         received_by=user_to_string(ctx=interaction.user)
                     )
                     
@@ -209,15 +222,15 @@ class ApproveView(discord.ui.View):
                     author_name = self.author.name + '#' + self.author.discriminator
                     if self.play == "TripleKill":
                         print('Recompensa de triple') 
-                        insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=50, transaction_type=self.play.lower())
+                        shop.insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=50, transaction_type=self.play.lower())
                         await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 50 Clan Coins.", view=None)
                     if self.play == "QuadraKill": 
                         print('Recompensa de quadra')
-                        insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=150, transaction_type=self.play.lower())
+                        shop.insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=150, transaction_type=self.play.lower())
                         await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 150 Clan Coins.", view=None)
                     if self.play == "PentaKill":
                         print('Recompensa de penta') 
-                        insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=250, transaction_type=self.play.lower())
+                        shop.insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=250, transaction_type=self.play.lower())
                         await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 250 Clan Coins.", view=None)
 
                 if self.command == "recompensa_promo":
@@ -236,7 +249,7 @@ class ApproveView(discord.ui.View):
                                 transaction_name = transaction_name + '_' + str(self.division)
 
                             print(transaction_name)
-                            insert_promo_reward_transaction(
+                            shop.insert_promo_reward_transaction(
                                 sent_by=aprover_mod, 
                                 received_by=author_name, 
                                 amount=reward, 
@@ -265,7 +278,7 @@ class Store():
     def __init__(self, user) -> None:
         self.buy_button = None
         self.cancel_button = None
-        self.items = get_store_items()
+        self.items = shop.get_store_items()
         self.user = user
         self.index = 0
         self.interaction_buttons = self.view(index=0)
@@ -344,7 +357,7 @@ class BuyButton(discord.ui.Button):
 
         async def callback(self, interaction):
             price = self.store_item["price"]
-            coins = get_user_coins(self.user)
+            coins = user.get_user_coins(self.user)
             print("price: ", price, "user clancoins: ", coins.data[0]['coins'])
             print(price > coins.data[0]['coins'])
 
@@ -357,7 +370,12 @@ class BuyButton(discord.ui.Button):
                         embed.set_image(url=self.store_item["image_url"])
 
                         transaction_name = f"buy_item_{str(self.store_item['id'])}"
-                        insert_item_buy(sent_by=user_to_string(interaction.guild.owner), received_by=user_to_string(interaction), amount=-self.store_item['price'], transaction_type=transaction_name) 
+                        shop.insert_item_buy(
+                            sent_by=user_to_string(interaction.guild.owner), 
+                            received_by=user_to_string(interaction.user), 
+                            amount=-self.store_item['price'], 
+                            transaction_type=transaction_name
+                        ) 
                         await interaction.user.send(f"Tu codigo para masterclass es {self.store_item['code']}")
                         await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}.', view=None, embed=embed)
                     else:
@@ -367,7 +385,7 @@ class BuyButton(discord.ui.Button):
                     
                     # await interaction.response.send_message()
                     transaction_name = f"buy_item_{str(self.store_item['id'])}"
-                    insert_item_buy(sent_by=user_to_string(interaction.guild.owner), received_by=self.user, amount=-self.store_item['price'], transaction_type=transaction_name)
+                    shop.insert_item_buy(sent_by=user_to_string(interaction.guild.owner), received_by=self.user, amount=-self.store_item['price'], transaction_type=transaction_name)
                     await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}', view=None, embed=None)
                     await interaction.followup.send(content=f"<@{interaction.user.id}> compró {self.store_item['name']}. En un momento <@{interaction.guild.owner_id}> se contactará para entregar el premio.")
 
@@ -417,7 +435,7 @@ class Create_add_item_view(discord.ui.Modal):
             embed.add_field(name="Codigo", value=code_and_amount[0])
             embed.add_field(name="Cantidad", value=code_and_amount[1])
 
-        create_new_store_item(payload=payload)
+        shop.create_new_store_item(payload=payload)
 
         embed.add_field(name="Nombre", value=self.children[0].value)
         embed.add_field(name="Precio", value=self.children[1].value)
