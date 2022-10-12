@@ -104,6 +104,7 @@ async def recompensa_division(
             await ctx.respond("Ya conseguiste este Elo, ¿Te gustaría seguir avanzando?")
 
     else:
+        await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
         await ctx.respond(f'{ctx.guild.owner.mention}', view=ApproveView(ctx=ctx, tier=tier, division=divisions[division], command="recompensa_promo"))
 
 @bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada. Enfriamiento: 24 horas.")
