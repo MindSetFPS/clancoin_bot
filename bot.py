@@ -57,12 +57,12 @@ async def recompensa_division(
 
     claiming_tier = get_user_tier(tier=tier)
     claiming_division = divisions[division]
+    img_to_file = await img.to_file()
 
     if len(promos.data) > 0:
         print('has used the command')
         highest_elo = 0 
         highest_division = 0
-        img_to_file = await img.to_file()
 
         for promo in promos.data:
             transaction_type = promo["transaction_type"]
