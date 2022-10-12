@@ -3,3 +3,4 @@
 .env.production
 test.db
 /__pycache__
+__pycache__/
