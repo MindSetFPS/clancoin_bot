@@ -3,7 +3,7 @@ import operator
 from typing import Union
 from discord.ui import Button
 from discord.ext import commands, pages
-from helpers import user_is_mod, move_forward, user_to_string
+from helpers import user_is_mod, move_forward, move_backwards, user_to_string
 from league_of_legends import divisions, tiers
 from models import prediction, shop, user
 
@@ -283,9 +283,9 @@ class Store():
         self.index = 0
         self.interaction_buttons = self.view(index=0)
         self.paginator = pages.Paginator(pages=self.embed(), custom_view=self.interaction_buttons, loop_pages=True, use_default_buttons=False)
-        self.prev = pages.PaginatorButton(button_type="prev", emoji="⏪", disabled=False, style=discord.ButtonStyle.blurple)
+        self.prev      = pages.PaginatorButton(button_type="prev", emoji="⏪", style=discord.ButtonStyle.blurple)
         self.indicator = pages.PaginatorButton(button_type="page_indicator", disabled=True)
-        self.next = pages.PaginatorButton(button_type="next", emoji="⏩", style=discord.ButtonStyle.blurple)
+        self.next      = pages.PaginatorButton(button_type="next", emoji="⏩", style=discord.ButtonStyle.blurple)
 
         async def next_item(interaction: discord.Interaction):
             self.index = self.paginator.current_page
@@ -301,7 +301,24 @@ class Store():
             )
             self.interaction_buttons.add_item(CancelButton())
             await self.paginator.goto_page(move_forward(self.items.data, self.paginator.current_page), interaction=interaction)
+        
+        async def prev_item(interaction: discord.Interaction):
+            self.index = self.paginator.current_page
+            self.interaction_buttons.clear_items()
+            self.interaction_buttons.add_item(
+                BuyButton(
+                    index=move_backwards(self.items.data, self.paginator.current_page), 
+                    user=self.user, 
+                    label=f'Comprar por {self.items.data[move_backwards(self.items.data, self.paginator.current_page)]["price"]} Clan Coins.',
+                    emoji=clancoin_emote,
+                    row=1,
+                    store_item=self.items.data[move_backwards(self.items.data, self.paginator.current_page)])
+            )
+            self.interaction_buttons.add_item(CancelButton())
+            await self.paginator.goto_page(move_backwards(self.items.data, self.paginator.current_page), interaction=interaction)
+        
         self.next.callback = next_item
+        self.prev.callback = prev_item
 
         # self.index = self.paginator.current_page
         self.paginator.add_button(self.prev)
@@ -321,7 +338,14 @@ class Store():
     
     def view(self, index):
         view = discord.ui.View()
-        self.buy_button = BuyButton(index=move_forward(self.items.data, self.index ), user=self.user, emoji=clancoin_emote , label=f'Comprar por {self.items.data[index]["price"]} Clan Coins.', store_item=self.items.data[self.index], row=1)
+        self.buy_button = BuyButton(
+            index=move_forward(self.items.data, self.index ), 
+            user=self.user, 
+            emoji=clancoin_emote , 
+            label=f'Comprar por {self.items.data[index]["price"]} Clan Coins.', 
+            store_item=self.items.data[self.index], 
+            row=1
+        )
         cancel_button = CancelButton()
         view.add_item(self.buy_button)
         view.add_item(cancel_button)
