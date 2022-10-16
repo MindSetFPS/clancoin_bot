@@ -26,8 +26,15 @@ class Shop():
     def insert_promo_reward_transaction(self, sent_by, received_by, amount, transaction_type):
         self.new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
 
-    def insert_play_reward(self, sent_by, received_by, amount, transaction_type):
-        self.new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
+    def insert_play_reward(self, sent_by, sent_by_discord_id, received_by, received_by_discord_id, amount, transaction_type):
+        self.new_transaction(
+            sent_by=sent_by, 
+            sent_by_discord_id=sent_by_discord_id, 
+            received_by=received_by, 
+            received_by_discord_id=received_by_discord_id, 
+            amount=amount, 
+            transaction_type=transaction_type
+        )
 
     def insert_item_buy(self, sent_by, sent_by_discord_id, received_by, received_by_discord_id, amount, transaction_type):
         self.new_transaction(

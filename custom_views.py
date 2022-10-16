@@ -220,18 +220,27 @@ class ApproveView(discord.ui.View):
                 if self.command == "recompensa_jugada":
                     aprover_mod = interaction.user.name + '#' + interaction.user.discriminator
                     author_name = self.author.name + '#' + self.author.discriminator
+                    amount = 0
+
                     if self.play == "TripleKill":
                         print('Recompensa de triple') 
-                        shop.insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=50, transaction_type=self.play.lower())
-                        await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 50 Clan Coins.", view=None)
+                        amount = 50
                     if self.play == "QuadraKill": 
                         print('Recompensa de quadra')
-                        shop.insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=150, transaction_type=self.play.lower())
-                        await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 150 Clan Coins.", view=None)
+                        amount = 150
                     if self.play == "PentaKill":
+                        amount = 250
                         print('Recompensa de penta') 
-                        shop.insert_play_reward(sent_by=aprover_mod, received_by=author_name, amount=250, transaction_type=self.play.lower())
-                        await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} 250 Clan Coins.", view=None)
+
+                    shop.insert_play_reward(
+                        sent_by=aprover_mod,
+                        sent_by_discord_id=interaction.user.id,
+                        received_by=author_name,
+                        received_by_discord_id=self.author.id,
+                        amount=amount, 
+                        transaction_type=self.play.lower()
+                    )
+                    await interaction.response.edit_message(content=f"Aprobado, recibes {clancoin_emote} {amount} Clan Coins.", view=None)
 
                 if self.command == "recompensa_promo":
                     for index, tier in enumerate(tiers):
