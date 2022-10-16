@@ -113,19 +113,27 @@ async def recompensa_jugada(
     ctx: discord.ApplicationContext, 
     jugada: Option(str, "Jugada", choices=["TripleKill", "QuadraKill", "PentaKill"]),
     video:Option(discord.SlashCommandOptionType.attachment, "Usa video para subir un archivo grabado en tu pc. (Maximo 8MB).", required=False),
-    link: Option(str, "Usa link si su1biste tu jugada a una plataforma como Youtube, Twitch, etc.", required=False)
-):
-    await ctx.defer()
-    print('/recompensa_jugada')
-    submission = link if link else ""
-    if video:
-        video_file = await video.to_file()
-        # video_file = video
-        await ctx.send_followup(content=f'{jugada}', file=video_file)
-    else:
-        await ctx.respond(f' {jugada} {submission}')
+    link: Option(str, "Usa link si su1biste tu jugada a una plataforma como Youtube, Twitch, etc.", required=False),
+    comentario: Option(str, "¿Quieres contarnos algo sobre tu jugada? Escribelo aqui.", required=False)
 
-    await ctx.respond(f"{ctx.guild.owner.mention}", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
+):
+    
+    if (video and video.content_type == 'video/mp4') or link:
+        print("we got something")
+        await ctx.defer()
+        print('/recompensa_jugada')
+        submission = link if link else ""
+        if video:
+            video_file = await video.to_file()
+            await ctx.send_followup(content=f'{jugada} {ctx.author.mention}: {comentario} ', file=video_file)
+        else:
+            await ctx.respond(f' {jugada} {ctx.author.mention}: {comentario} {submission}')
+        await ctx.respond(f"{ctx.guild.owner.mention}", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
+    else:
+        await ctx.respond("Debes incluir ya sea un video o un link que mande al video con tu jugada.", ephemeral=True)
+    
+    
+
 
 @bot.slash_command(name="mis_clancoins", description="Mira cuantas Clan Coins tienes.")
 async def check_clancoins(ctx):
