@@ -107,21 +107,27 @@ async def recompensa_division(
         await ctx.respond(f'{mensaje} {tier} {division}', file=img_to_file)
         await ctx.respond(f'{ctx.guild.owner.mention}', view=ApproveView(ctx=ctx, tier=tier, division=divisions[division], command="recompensa_promo"))
 
+def recompensa_jugada_cooldown(message: discord.Message):
+    if len(message.selected_options) > 1:
+        if message.selected_options[1]['name'] == 'video' or message.selected_options[1]['name'] == 'link':
+            print('activate cooldown')
+            return commands.Cooldown(1, 60 * 60 * 24)  # Users with the above role ID can use the command twice in 5 seconds
+        else:
+            return None
+    else:
+        return None
+
 @bot.slash_command(name="recompensa_jugada", description="Reclama tu recompensa por jugada. Enfriamiento: 24 horas.")
-@commands.cooldown(1, 60 * 60 * 24, commands.BucketType.user)
+@commands.dynamic_cooldown(recompensa_jugada_cooldown, commands.BucketType.user)
 async def recompensa_jugada(
     ctx: discord.ApplicationContext, 
     jugada: Option(str, "Jugada", choices=["TripleKill", "QuadraKill", "PentaKill"]),
     video:Option(discord.SlashCommandOptionType.attachment, "Usa video para subir un archivo grabado en tu pc. (Maximo 8MB).", required=False),
     link: Option(str, "Usa link si su1biste tu jugada a una plataforma como Youtube, Twitch, etc.", required=False),
     comentario: Option(str, "¿Quieres contarnos algo sobre tu jugada? Escribelo aqui.", required=False)
-
 ):
-    
     if (video and video.content_type == 'video/mp4') or link:
-        print("we got something")
         await ctx.defer()
-        print('/recompensa_jugada')
         submission = link if link else ""
         if video:
             video_file = await video.to_file()
@@ -130,10 +136,7 @@ async def recompensa_jugada(
             await ctx.respond(f' {jugada} {ctx.author.mention}: {comentario} {submission}')
         await ctx.respond(f"{ctx.guild.owner.mention}", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
     else:
-        await ctx.respond("Debes incluir ya sea un video o un link que mande al video con tu jugada.", ephemeral=True)
-    
-    
-
+        await ctx.respond("Debes incluir un archivo de video, o un link que mande al video con tu jugada.", ephemeral=True)
 
 @bot.slash_command(name="mis_clancoins", description="Mira cuantas Clan Coins tienes.")
 async def check_clancoins(ctx):
