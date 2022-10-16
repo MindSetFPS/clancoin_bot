@@ -7,10 +7,18 @@ class Shop():
         self.shop_items = db.table('item')
         self.transactions = db.table('transaction')
 
-    def new_transaction(self, sent_by, received_by, amount, transaction_type):
-        user.find_or_create_user(user=received_by)
-        user.set_new_balance(user=received_by, price=amount, operation=add)
-        self.transactions.insert({"transaction_type": transaction_type, "amount" : amount, "sent_by": sent_by, "received_by": received_by}).execute()
+    def new_transaction(self, sent_by, sent_by_discord_id, received_by, received_by_discord_id, amount, transaction_type):
+        user.find_or_create_user(discord_name=received_by, discord_id=received_by_discord_id)
+        user.set_new_balance(discord_name=received_by, discord_id=received_by_discord_id, price=amount, operation=add)
+        
+        self.transactions.insert({
+                "transaction_type": transaction_type, 
+                "amount" : amount, 
+                "sent_by": sent_by, 
+                "sent_by_discord_id": sent_by_discord_id,
+                "received_by": received_by,
+                "received_by_discord_id": received_by_discord_id
+        }).execute()
     
     def insert_welcome_gift_transaction(self, sent_by, received_by, amount):
         self.new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="welcome_gift")
@@ -21,8 +29,15 @@ class Shop():
     def insert_play_reward(self, sent_by, received_by, amount, transaction_type):
         self.new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
 
-    def insert_item_buy(self, sent_by, received_by, amount, transaction_type):
-        self.new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
+    def insert_item_buy(self, sent_by, sent_by_discord_id, received_by, received_by_discord_id, amount, transaction_type):
+        self.new_transaction(
+            sent_by=sent_by, 
+            sent_by_discord_id=sent_by_discord_id, 
+            received_by=received_by, 
+            received_by_discord_id=received_by_discord_id, 
+            amount=amount, 
+            transaction_type=transaction_type
+        )
 
     def get_store_items(self):
         return self.shop_items.select("*").execute()
@@ -38,9 +53,16 @@ class Shop():
         #do not get cofused with insert_gift_transaction, which gives the user a welcome goodie
         self.new_transaction(self, sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="frame_buy")
     
-    def insert_portrait_transaction(self, sent_by, received_by, amount):
+    def insert_portrait_transaction(self, sent_by, sent_by_discord_id, received_by, received_by_discord_id, amount):
         #do not get cofused with insert_gift_transaction, which gives the user a welcome goodie
-        self.new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="portrait_buy")
+        self.new_transaction(
+            sent_by=sent_by, 
+            sent_by_discord_id=sent_by_discord_id,
+            received_by=received_by, 
+            received_by_discord_id=received_by_discord_id,
+            amount=amount, 
+            transaction_type="portrait_buy"
+        )
     
     def insert_daily_transaction(self, sent_by, received_by, amount):
         self.new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type="daily_reward")
