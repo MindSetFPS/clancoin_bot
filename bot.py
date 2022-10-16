@@ -127,21 +127,6 @@ async def recompensa_jugada(
 
     await ctx.respond(f"{ctx.guild.owner.mention}", view=ApproveView(command="recompensa_jugada", ctx=ctx, play=jugada))
 
-
-#borrar
-
-@bot.slash_command(name="monedas_diarias", description ="Obtén tus monedas diarias.")
-@commands.cooldown(1, 60 * 60 * 24, commands.BucketType.user)
-async def get_coins(ctx):
-    discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
-    bot_full_user = bot.user.name + '#' + bot.user.discriminator
-
-    #get current coins number
-    coins = user.get_user_coins(user=user_to_string(ctx.author), discord_id=ctx.author.id)
-    current_coins = coins.data[0]["coins"]
-    transaction = shop.insert_daily_transaction(sent_by=bot_full_user, received_by=discord_full_user, amount=10 )
-    await ctx.respond(f"Recibiste tus monedas diarias, ahora tienes {current_coins + 10} {clancoin_emote}", ephemeral=True)
-
 @bot.slash_command(name="mis_clancoins", description="Mira cuantas Clan Coins tienes.")
 async def check_clancoins(ctx):
     print("/mis_clancoins")
