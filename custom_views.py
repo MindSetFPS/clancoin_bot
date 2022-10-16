@@ -381,7 +381,10 @@ class BuyButton(discord.ui.Button):
 
         async def callback(self, interaction):
             price = self.store_item["price"]
-            coins = user.get_user_coins(self.user)
+            print(self.user)
+            print(self.user.id)
+            coins = user.get_user_coins(discord_name=self.user, discord_id=self.user.id)
+            print(coins.data)
             print("price: ", price, "user clancoins: ", coins.data[0]['coins'])
             print(price > coins.data[0]['coins'])
 
@@ -409,7 +412,14 @@ class BuyButton(discord.ui.Button):
                     
                     # await interaction.response.send_message()
                     transaction_name = f"buy_item_{str(self.store_item['id'])}"
-                    shop.insert_item_buy(sent_by=user_to_string(interaction.guild.owner), received_by=self.user, amount=-self.store_item['price'], transaction_type=transaction_name)
+                    shop.insert_item_buy(
+                        sent_by=user_to_string(interaction.guild.owner),
+                        sent_by_discord_id=interaction.guild.owner.id,
+                        received_by_discord_id=self.user.id,
+                        received_by=user_to_string(self.user),
+                        amount=-self.store_item['price'], 
+                        transaction_type=transaction_name
+                    )
                     await interaction.response.edit_message(content=f'Compraste {self.store_item["name"]}', view=None, embed=None)
                     await interaction.followup.send(content=f"<@{interaction.user.id}> compró {self.store_item['name']}. En un momento <@{interaction.guild.owner_id}> se contactará para entregar el premio.")
 
