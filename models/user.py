@@ -36,8 +36,8 @@ class User():
         coins = self.users.select("coins").eq("discordUser", discord_name).execute()
         return coins
 
-    def get_user_promos(self, user):
-        self.find_or_create_user(user=user, )
+    def get_user_promos(self, discord_id, discord_name):
+        self.find_or_create_user(discord_id=discord_id, discord_name=discord_name )
         return self.transactions.select("*").like(column='transaction_type', pattern='promo_%').eq(column='received_by', value=user).execute()
     
 user = User()
