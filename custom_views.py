@@ -260,7 +260,9 @@ class ApproveView(discord.ui.View):
                             print(transaction_name)
                             shop.insert_promo_reward_transaction(
                                 sent_by=aprover_mod, 
+                                sent_by_discord_id=interaction.user.id,
                                 received_by=author_name, 
+                                received_by_discord_id=self.author.id,
                                 amount=reward, 
                                 transaction_type=transaction_name
                             )
