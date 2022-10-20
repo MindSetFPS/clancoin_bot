@@ -21,14 +21,21 @@ class Shop():
         }).execute()
     
     def insert_welcome_gift_transaction(self, sent_by, sent_by_discord_id, received_by, received_by_discord_id, amount):
-        self.new_transaction(
-            sent_by=sent_by, 
+        
+        if self.user_got_welcome_gift(
             received_by=received_by, 
-            sent_by_discord_id=sent_by_discord_id, 
-            received_by_discord_id=received_by_discord_id, 
-            amount=amount, 
-            transaction_type="welcome_gift"
-        )
+            received_by_discord_id=received_by_discord_id
+        ):
+            print('This user has already got his welcome gift before.')
+        else:
+            self.new_transaction(
+                sent_by=sent_by, 
+                received_by=received_by, 
+                sent_by_discord_id=sent_by_discord_id, 
+                received_by_discord_id=received_by_discord_id, 
+                amount=amount, 
+                transaction_type="welcome_gift"
+            )
 
     def insert_promo_reward_transaction(self, sent_by, received_by, sent_by_discord_id, received_by_discord_id, amount, transaction_type):
         self.new_transaction(
@@ -100,8 +107,27 @@ class Shop():
             transaction_type="daily_reward"
         )
     
-    def user_got_welcome_gift(self, received_by):
-        return self.transactions.select("*").match({"transaction_type": "welcome_gift", "received_by": received_by}).execute()
+    def user_got_welcome_gift(self, received_by, received_by_discord_id):
+        already_has_welcome_gift = None        
+        find_by_id = self.transactions.select("*").match({
+            "transaction_type": "welcome_gift", 
+            "received_by_discord_id": received_by_discord_id
+        }).execute()
+
+        if len(find_by_id.data) > 0:
+            already_has_welcome_gift = True
+        else:
+            print('find by name')
+            find_by_name = self.transactions.select("*").match({
+                "transaction_type": "welcome_gift", 
+                "received_by": received_by
+            }).execute()
+
+            if len(find_by_name.data) > 0:
+                already_has_welcome_gift = True 
+            else:
+                already_has_welcome_gift = False
+        return already_has_welcome_gift
 
     def get_store_items(self):
         return self.shop_items.select("*").execute()

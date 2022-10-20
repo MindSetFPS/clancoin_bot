@@ -29,12 +29,50 @@ async def on_ready():
     print(f"{bot.user} is ready and online!")
 
 @bot.event
-async def on_member_join(member):
-    bot_full_user = bot.user.name + '#' + bot.user.discriminator
-    discord_full_user = member.name + '#' + member.discriminator
-    shop.insert_welcome_gift_transaction(amount=500, sent_by=bot_full_user, received_by=discord_full_user)
-    channel = discord.utils.get(member.guild.channels, name="👋・bienvenidas")
-    await channel.send(f"<@{member.id}> recibiste 500 {clancoin_emote} Clan Coins.")
+async def on_member_join(member: discord.Member):
+    shop.insert_welcome_gift_transaction(
+        amount=250, 
+        sent_by=user_to_string(ctx=bot.user), 
+        sent_by_discord_id=bot.user.id,
+        received_by=user_to_string(ctx=member),
+        received_by_discord_id=member.id
+    )     
+    embed = discord.Embed(
+        title="Bienvenido a Clan Society, el Discord Oficial de Clan Academy",
+        description="""
+        Esperamos que disfrutes tu estadia en nuestro servidor.
+        
+        **Por haber entrado hoy, recibes 250 Clan Coins**
+        > Revisa el canal de #comandos-basicos para saber mas.
+
+        **Comparte tu primera jugada**
+        > Presume tus mejores jugadas en #pide-recompensa.
+
+        **Participa en los torneos 1v1**
+        > Vive la adrenalina de los torneos y midete contra otros miembros de Clan.
+
+        **Busca compañeros para hacer duo**
+        > Encuentra tu duo perfecto, o ese jugador que le hacia falta a tu Clash.
+        """,
+        color=discord.Colour.blurple(), 
+        url="https://www.clanacademy.com/"
+        # Pycord provides a class with default colors you can choose from
+    )
+    embed.set_author(
+        name="Clan Society", 
+        icon_url="https://static.wixstatic.com/media/f02ea5_ded73dfdc7004a88a80ccc453a7da9ff~mv2.png"
+    )
+    embed.set_thumbnail(
+        url="https://static.wixstatic.com/media/f02ea5_4f18097c117b45ac9ff637f1188a6b9a~mv2.png"
+    )
+    embed.set_image(
+        url="https://static.wixstatic.com/media/66910b_f6e4436aa3e94a43b20df2d24afac9cb~mv2.jpg"
+    )
+    embed.set_footer(
+        text="Esperamos que disfrutes tu estadia en nuestro servidor."
+    ) # footers can have icons too
+
+    await member.send(embed=embed)
 
 @bot.event
 async def on_application_command_error(ctx, error):
@@ -277,6 +315,7 @@ async def portada(
 
 @bot.slash_command(name="marco", description="Obten una foto de perfil para apoyar a tu equipo favorito durante #Worlds2022.")
 async def profile_picture(ctx: discord.ApplicationContext, equipo: Option(str, '¿De que equipo es el diseño de tu marco?', choices=['Isurus', 'Fnatic'])):
+    
     coins = user.get_user_coins(discord_name=user_to_string(ctx=ctx.user), discord_id=ctx.user.id)
     if len(coins.data) > 0:
         if coins.data[0]["coins"] > 150:
