@@ -12,6 +12,7 @@ from models import user, prediction, shop
 from PIL import Image, ImageFont, ImageDraw
 from portadas import portadas
 from urllib.request import urlopen
+# from notifications import send_notification
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
 bot = discord.Bot(intents=discord.Intents.all())
@@ -31,7 +32,7 @@ async def on_ready():
 @bot.event
 async def on_member_join(member: discord.Member):
     shop.insert_welcome_gift_transaction(
-        amount=250, 
+        amount=500, 
         sent_by=user_to_string(ctx=bot.user), 
         sent_by_discord_id=bot.user.id,
         received_by=user_to_string(ctx=member),
@@ -45,8 +46,11 @@ async def on_member_join(member: discord.Member):
         **Por haber entrado hoy, recibes 250 Clan Coins**
         > Revisa el canal de #comandos-basicos para saber mas.
 
+        **Completa la encuesta de Clan**
+        > Usa `/info` en el servidor para completar la encuesta y estar al tanto de todas las novedades de Clan.
+
         **Comparte tu primera jugada**
-        > Presume tus mejores jugadas en #pide-recompensa.
+        > Presume tus mejores jugadas en #pide-recompensa y empieza a ganar mas Clan Coins.
 
         **Participa en los torneos 1v1**
         > Vive la adrenalina de los torneos y midete contra otros miembros de Clan.
@@ -249,7 +253,6 @@ async def create_new_bet(
     prize: Option(int, "Cuantas Clan Coins recibiran los ganadores de la prediccion.") = 75,
     costo: Option(int, "Costo por entrar a la prediccion.") = 25,
 ):
-
     if user_is_mod(ctx=ctx):
         # print("User is mod, continue")
         predict = prediction.create_new_prediction(option0=team_option0, option1=team_option1, prize=prize, text=question)
@@ -262,6 +265,7 @@ async def create_new_bet(
         betView = BetView(ctx=ctx, teamOption0=team_option0, teamOption1=team_option1, question=question, prediction_id=predict[0]["id"], prize=prize, entry_cost=costo)
 
         await channel.send(content=None, view=betView, embed=embed)
+        # await send_notification(client=bot, description=f"Creada encuesta '{question}' en el canal {channel.mention}", title="Nueva encuesta.", id=1031351545469607956)
         await ctx.respond(content=f'Creada encuesta "{question}" en el canal {channel.mention}')
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
