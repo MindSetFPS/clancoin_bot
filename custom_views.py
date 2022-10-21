@@ -185,18 +185,24 @@ class ConfirmVote(discord.ui.Button):
                     await interaction.response.send_message(content=f'Tu voto ya no se puede alterar.', ephemeral=True)
                 else:
                     #    si no crear una entrada con su respuesta en la db
-                    pick = prediction.create_users_prediction_pick(pick=self.selection, prediction_id=self.prediction_id, user=user_to_string(interaction.user))
+                    pick = prediction.create_users_prediction_pick(
+                        pick=self.selection, 
+                        prediction_id=self.prediction_id, 
+                        user=user_to_string(interaction.user),
+                        discord_id=interaction.user.id
+                    )
 
                     guild_owner_str = user_to_string(ctx=interaction.guild.owner)
                     print(guild_owner_str)
                     print(type(guild_owner_str))
 
                     prediction.create_prediction_entry_transaction(
-
                         transaction_type=f'prediction_entry_{str(self.prediction_id)}', 
                         amount=-self.entry_cost, 
                         sent_by=guild_owner_str, 
-                        received_by=user_to_string(ctx=interaction.user)
+                        sent_by_discord_id=interaction.guild.owner.id,
+                        received_by=user_to_string(ctx=interaction.user),
+                        received_by_discord_id=interaction.user.id
                     )
                     
                     #    si ya tiene, mandar un mensaje diciendo que ya voto y por quien

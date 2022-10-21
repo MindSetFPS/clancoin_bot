@@ -10,8 +10,13 @@ class Prediction():
     def set_prediction_correct_answer(self, winner, prediction_id):
         self.predictions.update({"winner": winner }).eq("id", prediction_id).execute()  
 
-    def create_users_prediction_pick(self, prediction_id, pick, user):
-        return self.prediction_picks.insert({"prediction": prediction_id, "pick": pick, "user": user}).execute()
+    def create_users_prediction_pick(self, prediction_id, pick, user, discord_id):
+        return self.prediction_picks.insert({
+            "prediction": prediction_id, 
+            "pick": pick, 
+            "user": user,
+            "discord_id": discord_id
+        }).execute()
     
     def user_has_already_picked(self, user: str, prediction_id: int):
         query = self.prediction_picks.select("*").match({"user": user, "prediction": int(prediction_id)}).execute()
@@ -27,8 +32,15 @@ class Prediction():
     def set_prediction_transaction(self, transaction_type, amount, sent_by, received_by):
         shop.new_transaction(transaction_type=transaction_type, amount=amount, sent_by=sent_by, received_by=received_by)
     
-    def create_prediction_entry_transaction(self, sent_by, received_by, amount, transaction_type):
-        shop.new_transaction(sent_by=sent_by, received_by=received_by, amount=amount, transaction_type=transaction_type)
+    def create_prediction_entry_transaction(self, sent_by, received_by, sent_by_discord_id, received_by_discord_id, amount, transaction_type):
+        shop.new_transaction(
+            sent_by=sent_by, 
+            sent_by_discord_id=sent_by_discord_id,
+            received_by=received_by, 
+            received_by_discord_id=received_by_discord_id,
+            amount=amount,
+            transaction_type=transaction_type
+        )
     
     def get_predictors(self, prediction_id: int, pick: int ):
         query = self.prediction_picks.select("*").match({"prediction": prediction_id, "pick": pick}).execute()
