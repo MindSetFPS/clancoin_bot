@@ -101,11 +101,10 @@ class BetOptionButton(discord.ui.Button):
                         transaction_type=f'prediction_{str(self.prediction_id)}', 
                         amount=self.prize, 
                         sent_by=user_to_string(ctx=interaction.guild.owner), 
-                        received_by=predict["user"]
+                        sent_by_discord_id=interaction.guild.owner.id,
+                        received_by=predict["user"],
+                        received_by_discord_id=predict["discord_id"]
                     )
-
-                    #editar el balance con el nuevo 
-                    user.set_new_balance(user=predict["user"], price=self.prize, operation=operator.add)
 
                 # eliminar botones, y poner el resultadoHa ganado X."
                 embed = discord.Embed(title=self.question, description=f'Respuesta correcta: {self.emoji} {self.label}')

@@ -29,8 +29,15 @@ class Prediction():
         data = self.predictions.insert({"text": text, "option0": option0, "option1": option1, "prize": prize}).execute()
         return data.data
 
-    def set_prediction_transaction(self, transaction_type, amount, sent_by, received_by):
-        shop.new_transaction(transaction_type=transaction_type, amount=amount, sent_by=sent_by, received_by=received_by)
+    def set_prediction_transaction(self, transaction_type, amount, sent_by, sent_by_discord_id, received_by, received_by_discord_id):
+        shop.new_transaction(
+            transaction_type=transaction_type, 
+            amount=amount, 
+            sent_by=sent_by, 
+            sent_by_discord_id=sent_by_discord_id,
+            received_by=received_by,
+            received_by_discord_id=received_by_discord_id,
+        )
     
     def create_prediction_entry_transaction(self, sent_by, received_by, sent_by_discord_id, received_by_discord_id, amount, transaction_type):
         shop.new_transaction(
