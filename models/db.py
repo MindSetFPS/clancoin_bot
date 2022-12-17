@@ -4,11 +4,6 @@ from supabase.client import Client, create_client
 import os
 import sys
 
-if sys.argv[1] == "dev":
-    load_dotenv('.env.development')
-elif sys.argv[1] == "prod":
-    load_dotenv('.env.production')
-
 url = os.getenv("url")
 key = os.getenv("public")
         

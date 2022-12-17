@@ -12,15 +12,9 @@ from models import user, prediction, shop
 from PIL import Image, ImageFont, ImageDraw
 from portadas import portadas
 from urllib.request import urlopen
-# from notifications import send_notification
 
 tiers = [iron, bronze, silver, gold, platinum, diamond, master, grandmaster, challenger]
 bot = discord.Bot(intents=discord.Intents.all())
-
-if sys.argv[1] == "dev":
-    load_dotenv('.env.development')
-elif sys.argv[1] == "prod":
-    load_dotenv('.env.production')
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 clancoin_emote = '<:clancoin:974120483693924464>'
@@ -30,53 +24,12 @@ async def on_ready():
     print(f"{bot.user} is ready and online!")
 
 @bot.event
-async def on_member_join(member: discord.Member):
-    shop.insert_welcome_gift_transaction(
-        amount=500, 
-        sent_by=user_to_string(ctx=bot.user), 
-        sent_by_discord_id=bot.user.id,
-        received_by=user_to_string(ctx=member),
-        received_by_discord_id=member.id
-    )     
-    embed = discord.Embed(
-        title="Bienvenido a Clan Society, el Discord Oficial de Clan Academy",
-        description="""
-        Esperamos que disfrutes tu estadia en nuestro servidor.
-        
-        **Por haber entrado hoy, recibes 250 Clan Coins**
-        > Revisa el canal de #comandos-basicos para saber mas.
-
-        **Completa la encuesta de Clan**
-        > Usa `/info` en el servidor para completar la encuesta y estar al tanto de todas las novedades de Clan.
-
-        **Comparte tu primera jugada**
-        > Presume tus mejores jugadas en #pide-recompensa y empieza a ganar mas Clan Coins.
-
-        **Participa en los torneos 1v1**
-        > Vive la adrenalina de los torneos y midete contra otros miembros de Clan.
-
-        **Busca compañeros para hacer duo**
-        > Encuentra tu duo perfecto, o ese jugador que le hacia falta a tu Clash.
-        """,
-        color=discord.Colour.blurple(), 
-        url="https://www.clanacademy.com/"
-        # Pycord provides a class with default colors you can choose from
-    )
-    embed.set_author(
-        name="Clan Society", 
-        icon_url="https://static.wixstatic.com/media/f02ea5_ded73dfdc7004a88a80ccc453a7da9ff~mv2.png"
-    )
-    embed.set_thumbnail(
-        url="https://static.wixstatic.com/media/f02ea5_4f18097c117b45ac9ff637f1188a6b9a~mv2.png"
-    )
-    embed.set_image(
-        url="https://static.wixstatic.com/media/66910b_f6e4436aa3e94a43b20df2d24afac9cb~mv2.jpg"
-    )
-    embed.set_footer(
-        text="Esperamos que disfrutes tu estadia en nuestro servidor."
-    ) # footers can have icons too
-
-    await member.send(embed=embed)
+async def on_member_join(member):
+    bot_full_user = bot.user.name + '#' + bot.user.discriminator
+    discord_full_user = member.name + '#' + member.discriminator
+    shop.insert_welcome_gift_transaction(amount=500, sent_by=bot_full_user, received_by=discord_full_user)
+    channel = discord.utils.get(member.guild.channels, name="👋・bienvenidas")
+    await channel.send(f"<@{member.id}> recibiste 500 {clancoin_emote} Clan Coins.")
 
 @bot.event
 async def on_application_command_error(ctx, error):
@@ -94,7 +47,7 @@ async def recompensa_division(
     mensaje: Option(str, "Deja un mensaje libre.") = " "
 ):
     print('/recompensa_promo')
-    promos = user.get_user_promos(discord_name=user_to_string(ctx.user), discord_id=ctx.user.id)
+    promos = user.get_user_promos(user_to_string(ctx.user))
     print(promos.data)
 
     claiming_tier = get_user_tier(tier=tier)
@@ -194,15 +147,11 @@ async def check_clancoins(ctx):
         await ctx.respond(f"Tienes {0} {clancoin_emote}", ephemeral=True)
 
 @bot.slash_command(name="dar_monedas_a_usuario", description="Da ClanCoins a un usario.")
-async def give_clancoins(ctx: discord.ApplicationContext, member: discord.Member, amount: int):
+async def give_clancoins(ctx, member: discord.Member, amount: int):
     if user_is_mod(ctx=ctx):
-        transaction = shop.insert_gift_transaction(
-            sent_by=user_to_string(ctx=ctx.user), 
-            sent_by_discord_id=ctx.author.id,
-            received_by=user_to_string(ctx=member), 
-            received_by_discord_id=member.id,
-            amount=amount
-        )
+        discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
+        discord_member_full_username = member.name + '#' + member.discriminator
+        transaction = shop.insert_gift_transaction(sent_by=discord_full_user, received_by=discord_member_full_username, amount=amount)
         await ctx.respond(f'Le diste {amount} {clancoin_emote} a {member.mention}.')
     else:
         await ctx.respond("No tienes permiso para hacer eso.")
@@ -253,8 +202,9 @@ async def create_new_bet(
     prize: Option(int, "Cuantas Clan Coins recibiran los ganadores de la prediccion.") = 75,
     costo: Option(int, "Costo por entrar a la prediccion.") = 25,
 ):
+
     if user_is_mod(ctx=ctx):
-        # print("User is mod, continue")
+        # print("User is mod, continue")    
         predict = prediction.create_new_prediction(option0=team_option0, option1=team_option1, prize=prize, text=question)
         print(predict[0]["id"])
 
@@ -265,7 +215,6 @@ async def create_new_bet(
         betView = BetView(ctx=ctx, teamOption0=team_option0, teamOption1=team_option1, question=question, prediction_id=predict[0]["id"], prize=prize, entry_cost=costo)
 
         await channel.send(content=None, view=betView, embed=embed)
-        # await send_notification(client=bot, description=f"Creada encuesta '{question}' en el canal {channel.mention}", title="Nueva encuesta.", id=1031351545469607956)
         await ctx.respond(content=f'Creada encuesta "{question}" en el canal {channel.mention}')
     else:
         await ctx.respond("No tienes el rol necesario para usar este comando.", ephemeral=True)
@@ -319,7 +268,6 @@ async def portada(
 
 @bot.slash_command(name="marco", description="Obten una foto de perfil para apoyar a tu equipo favorito durante #Worlds2022.")
 async def profile_picture(ctx: discord.ApplicationContext, equipo: Option(str, '¿De que equipo es el diseño de tu marco?', choices=['Isurus', 'Fnatic'])):
-    
     coins = user.get_user_coins(discord_name=user_to_string(ctx=ctx.user), discord_id=ctx.user.id)
     if len(coins.data) > 0:
         if coins.data[0]["coins"] > 150:
