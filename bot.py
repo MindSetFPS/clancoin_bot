@@ -47,7 +47,7 @@ async def recompensa_division(
     mensaje: Option(str, "Deja un mensaje libre.") = " "
 ):
     print('/recompensa_promo')
-    promos = user.get_user_promos(user_to_string(ctx.user))
+    promos = user.get_user_promos(discord_name=user_to_string(ctx.user), discord_id=ctx.user.id)
     print(promos.data)
 
     claiming_tier = get_user_tier(tier=tier)
@@ -151,7 +151,9 @@ async def give_clancoins(ctx, member: discord.Member, amount: int):
     if user_is_mod(ctx=ctx):
         discord_full_user = ctx.author.name + '#' + ctx.author.discriminator
         discord_member_full_username = member.name + '#' + member.discriminator
-        transaction = shop.insert_gift_transaction(sent_by=discord_full_user, received_by=discord_member_full_username, amount=amount)
+        
+        transaction = shop.insert_gift_transaction(sent_by=discord_full_user, sent_by_discord_id=ctx.author.id, received_by=discord_member_full_username, received_by_discord_id=member.id, amount=amount)
+        
         await ctx.respond(f'Le diste {amount} {clancoin_emote} a {member.mention}.')
     else:
         await ctx.respond("No tienes permiso para hacer eso.")
