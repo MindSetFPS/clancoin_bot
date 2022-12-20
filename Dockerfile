@@ -1,4 +1,5 @@
-FROM python:3.11-alpine
+FROM python:3.10-alpine
+#supabase 3:11 has errors with supabase
 
 WORKDIR /app
 
